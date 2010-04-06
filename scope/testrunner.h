@@ -20,7 +20,9 @@ namespace scope {
       test();
     }
     catch(test_failure fail) {
-      messages.push_back(std::string(testname) + ": " + fail.what());
+      std::stringstream buf;
+      buf << fail.File << ":" << fail.Line << ": " << testname << ": " << fail.what();
+      messages.push_back(buf.str());
     }
     catch(std::exception except) {
       messages.push_back(std::string(testname) + ": " + except.what());

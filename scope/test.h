@@ -23,14 +23,9 @@ namespace scope {
       std::runtime_error(message), File(file), Line(line)
       {
       }
+
+    virtual ~test_failure() throw() {}
     
-    virtual const char* what(void) {
-      std::stringstream ret;
-      ret << File << ':' << Line << ": " << std::runtime_error::what();
-      return ret.str().c_str();
-    }
-    
-  private:
     const char *const File;
     int               Line;
   };
@@ -117,7 +112,9 @@ namespace scope {
   	      (*Fn)(*fixture);
         }
         catch(test_failure fail) {
-  	      messages.push_back(Name + ": " + fail.what());
+          std::stringstream buf;
+          buf << fail.File << ":" << fail.Line << ": " << Name << ": " << fail.what();
+  	      messages.push_back(buf.str());
         }
         catch(std::exception except) {
   	      messages.push_back(Name + ": " + except.what());
