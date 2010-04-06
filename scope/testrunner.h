@@ -35,44 +35,42 @@ namespace scope {
     std::cerr << name << ": " << msg << "; please at least inherit from std::exception" << std::endl;
   }
 
+  typedef boost::adjacency_list< boost::vecS, boost::vecS, boost::directedS, boost::property< boost::vertex_color_t, boost::default_color_type > > TestGraph;
+  typedef boost::graph_traits<TestGraph>::vertex_descriptor Vertex;
+  typedef boost::graph_traits<TestGraph>::vertex_iterator VertexIter;
+  typedef boost::property_map<TestGraph, boost::vertex_color_t>::type Color;
+  typedef boost::property_map<TestGraph, boost::vertex_index_t>::type IndexMap;
+  typedef boost::shared_ptr< Test > TestPtr;
+  typedef std::vector< TestPtr > TestMap;
+
+  class TestVisitor : public boost::default_dfs_visitor {
+  public:
+  	TestVisitor(TestMap& tests, MessageList& messages, const std::string& nameFilt, bool debug): Tests(tests), Messages(messages), NameFilter(nameFilt), Debug(debug) {}
+
+  	template <typename Vertex, typename Graph> void discover_vertex(Vertex v, const Graph& g) const {
+  	  using namespace boost;
+  	  //std::cerr << "Running " << Tests[get(vertex_index, g)[v]]->Name << "\n";
+      std::string name(Tests[get(vertex_index, g)[v]]->Name);
+      if (NameFilter.empty() || NameFilter == name) {
+        if (Debug) {
+          std::cerr << "Running " << name << std::endl;
+        }
+  	    Tests[get(vertex_index, g)[v]]->Run(Messages);
+  	    if (Debug) {
+          std::cerr << "Done with " << name << std::endl;
+  	    }
+  	  }
+  	}
+
+  private:
+  	TestMap& Tests;
+  	MessageList& Messages;
+    std::string NameFilter;
+    bool        Debug;
+  };
+
   namespace {
     class TestRunnerImpl : public TestRunner {
-
-      typedef boost::adjacency_list< boost::vecS, boost::vecS, boost::directedS, boost::property< boost::vertex_color_t, boost::default_color_type > > TestGraph;
-      typedef boost::graph_traits<TestGraph>::vertex_descriptor Vertex;
-      typedef boost::graph_traits<TestGraph>::vertex_iterator VertexIter;
-      typedef boost::property_map<TestGraph, boost::vertex_color_t>::type Color;
-      typedef boost::property_map<TestGraph, boost::vertex_index_t>::type IndexMap;
-      typedef boost::shared_ptr< Test > TestPtr;
-      typedef std::vector< TestPtr > TestMap;
-
-      class TestVisitor : public boost::default_dfs_visitor {
-      private:
-      	TestMap& Tests;
-      	MessageList& Messages;
-        std::string NameFilter;
-        bool        Debug;
-
-    	public:
-      	TestVisitor(TestMap& tests, MessageList& messages, const std::string& nameFilt, bool debug): Tests(tests), Messages(messages), NameFilter(nameFilt), Debug(debug) {}
-	      TestVisitor(const TestVisitor& x): Tests(x.Tests), Messages(x.Messages), NameFilter(x.NameFilter), Debug(x.Debug) {}
-	
-      	template <typename Vertex, typename Graph> void discover_vertex(Vertex v, const Graph& g) const {
-      	  using namespace boost;
-      	  //std::cerr << "Running " << Tests[get(vertex_index, g)[v]]->Name << "\n";
-          std::string name(Tests[get(vertex_index, g)[v]]->Name);
-          if (NameFilter.empty() || NameFilter == name) {
-            if (Debug) {
-              std::cerr << "Running " << name << std::endl;
-            }
-      	    Tests[get(vertex_index, g)[v]]->Run(Messages);
-      	    if (Debug) {
-              std::cerr << "Done with " << name << std::endl;
-      	    }
-      	  }
-      	}
-      };
-
     public:
       TestRunnerImpl():
         FirstTest(0), FirstEdge(0), NumTests(0), Debug(false) {}
