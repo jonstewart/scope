@@ -19,12 +19,12 @@ namespace scope {
     try {
       test();
     }
-    catch(test_failure fail) {
+    catch(test_failure& fail) {
       std::stringstream buf;
       buf << fail.File << ":" << fail.Line << ": " << testname << ": " << fail.what();
       messages.push_back(buf.str());
     }
-    catch(std::exception except) {
+    catch(std::exception& except) {
       messages.push_back(std::string(testname) + ": " + except.what());
     }
     catch(...) {

@@ -111,12 +111,12 @@ namespace scope {
         try {
   	      (*Fn)(*fixture);
         }
-        catch(test_failure fail) {
+        catch(test_failure& fail) {
           std::stringstream buf;
           buf << fail.File << ":" << fail.Line << ": " << Name << ": " << fail.what();
   	      messages.push_back(buf.str());
         }
-        catch(std::exception except) {
+        catch(std::exception& except) {
   	      messages.push_back(Name + ": " + except.what());
         }
         catch(...) {
@@ -126,10 +126,10 @@ namespace scope {
         try {
   	      delete fixture;
         }
-        catch(test_failure fail) {
+        catch(test_failure& fail) {
   	      messages.push_back(Name + ": " + fail.what());
         }
-        catch(std::exception except) {
+        catch(std::exception& except) {
   	      messages.push_back(Name + ": " + except.what());
         }
         catch(...) {
@@ -137,10 +137,10 @@ namespace scope {
   	      throw;
         }
       }
-      catch(test_failure fail) {
+      catch(test_failure& fail) {
         messages.push_back(Name + ": " + fail.what());
       }
-      catch(std::exception except) {
+      catch(std::exception& except) {
         messages.push_back(Name + ": " + except.what());
       }
       catch(...) {
