@@ -342,6 +342,6 @@ namespace scope {
     statement; \
     throw scope::test_failure(__FILE__, __LINE__, "Expected exception not caught"); \
   } \
-  catch(exception) { \
+  catch(exception&) { \
     ; \
   }
