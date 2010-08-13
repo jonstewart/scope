@@ -47,45 +47,50 @@ namespace scope {
 
   class TestVisitor : public boost::default_dfs_visitor {
   public:
-  	TestVisitor(TestMap& tests, MessageList& messages, const std::string& nameFilt, bool debug): Tests(tests), Messages(messages), NameFilter(nameFilt), Debug(debug) {}
+  	TestVisitor(TestRunner& runner, TestMap& tests, MessageList& messages): Runner(runner), Tests(tests), Messages(messages) {}
 
   	template <typename Vertex, typename Graph> void discover_vertex(Vertex v, const Graph& g) const {
   	  using namespace boost;
   	  //std::cerr << "Running " << Tests[get(vertex_index, g)[v]]->Name << "\n";
-      std::string name(Tests[get(vertex_index, g)[v]]->Name);
-      if (NameFilter.empty() || NameFilter == name) {
-        if (Debug) {
-          std::cerr << "Running " << name << std::endl;
-        }
-  	    Tests[get(vertex_index, g)[v]]->Run(Messages);
-  	    if (Debug) {
-          std::cerr << "Done with " << name << std::endl;
-  	    }
-  	  }
+      Test& t(*Tests[get(vertex_index, g)[v]]);
+      Runner.RunTest(t, Messages);
   	}
 
   private:
+    TestRunner& Runner;
   	TestMap& Tests;
   	MessageList& Messages;
-    std::string NameFilter;
-    bool        Debug;
   };
 
   namespace {
     class TestRunnerImpl : public TestRunner {
     public:
       TestRunnerImpl():
-        FirstTest(0), FirstEdge(0), NumTests(0), Debug(false) {}
+        FirstTest(0), FirstEdge(0), NumTests(0), NumRun(0), Debug(false) {}
+
+      virtual void RunTest(Test& test, MessageList& messages) {
+        if (NameFilter.empty() || NameFilter == test.Name) {
+          if (Debug) {
+            std::cerr << "Running " << test.Name << std::endl;
+          }
+          ++NumRun;
+    	    test.Run(messages);
+    	    if (Debug) {
+            std::cerr << "Done with " << test.Name << std::endl;
+    	    }
+    	  }
+      }
 
       virtual void Run(MessageList& messages, const std::string& nameFilter) {
       	using namespace boost;
+        NameFilter = nameFilter;
         for (AutoRegister* cur = FirstTest; cur != 0; cur = cur->Next) {
           Add(TestPtr(cur->Construct()));
         }
         for (CreateEdge* cur = FirstEdge; cur; cur = cur->Next) {
           CreateLink(cur->From, cur->To);
         }
-      	TestVisitor vis(Tests, messages, nameFilter, Debug);
+      	TestVisitor vis(*this, Tests, messages);
       	depth_first_search(Graph, vis, get(vertex_color, Graph));
     	/*	for(std::pair< VertexIter, VertexIter > vipair(vertices(Graph)); vipair.first != vipair.second; ++vipair.first) {
     	  Tests[get(vertex_index, Graph)[*vipair.first]]->Run(messages);
@@ -129,6 +134,10 @@ namespace scope {
         return NumTests;
       }
 
+      virtual unsigned int numRun() const {
+        return NumRun;
+      }
+
       virtual void setDebug(bool val) {
         Debug = val;
       }
@@ -138,7 +147,9 @@ namespace scope {
       TestMap   Tests;
       AutoRegister* FirstTest;
       CreateEdge*   FirstEdge;
-      unsigned int  NumTests;
+      std::string   NameFilter;
+      unsigned int  NumTests,
+                    NumRun;
       bool          Debug;
     };
   }
@@ -162,12 +173,12 @@ namespace scope {
       out << *it << '\n';
     }
     if (msgs.begin() == msgs.end()) {
-      out << "OK (" << runner.numTests() << " tests)" << std::endl;
+      out << "OK (" << runner.numRun() << " tests)" << std::endl;
       return true;
     }
     else {
       out << "Failures!" << std::endl;
-      out << "Tests run: " << runner.numTests() << ", Failures: " << msgs.size() << std::endl;
+      out << "Tests run: " << runner.numRun() << ", Failures: " << msgs.size() << std::endl;
       return false;
     }
   }

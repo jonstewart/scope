@@ -158,6 +158,7 @@ namespace scope {
   public:
     static TestRunner& Get(void);
 
+    virtual void RunTest(Test& test, MessageList& messages) = 0;
     virtual void Run(MessageList& messages, const std::string& nameFilter = "") = 0;
 
 //    virtual size_t Add(TestPtr test) = 0;
@@ -166,6 +167,7 @@ namespace scope {
     virtual void addLink(CreateEdge& link) = 0;
     virtual void CreateLink(const AutoRegister& from, const AutoRegister& to) = 0;
     virtual unsigned int numTests() const = 0;
+    virtual unsigned int numRun() const = 0;
     virtual void setDebug(bool) = 0;
 
   protected:
