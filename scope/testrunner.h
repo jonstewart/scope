@@ -52,8 +52,8 @@ namespace scope {
   	template <typename Vertex, typename Graph> void discover_vertex(Vertex v, const Graph& g) const {
   	  using namespace boost;
   	  //std::cerr << "Running " << Tests[get(vertex_index, g)[v]]->Name << "\n";
-      Test& t(*Tests[get(vertex_index, g)[v]]);
-      Runner.RunTest(t, Messages);
+      TestPtr t(Tests[get(vertex_index, g)[v]]);
+      Runner.runTest(t.get(), Messages);
   	}
 
   private:
@@ -68,20 +68,20 @@ namespace scope {
       TestRunnerImpl():
         FirstTest(0), FirstEdge(0), NumTests(0), NumRun(0), Debug(false) {}
 
-      virtual void RunTest(Test& test, MessageList& messages) {
-        if (NameFilter.empty() || NameFilter == test.Name) {
+      virtual void runTest(const Test* const test, MessageList& messages) {
+        if (dynamic_cast<const SetTest*>(test) == 0 && (NameFilter.empty() || NameFilter == test->Name)) {
           if (Debug) {
-            std::cerr << "Running " << test.Name << std::endl;
+            std::cerr << "Running " << test->Name << std::endl;
           }
           ++NumRun;
-    	    test.Run(messages);
+    	    test->Run(messages);
     	    if (Debug) {
-            std::cerr << "Done with " << test.Name << std::endl;
+            std::cerr << "Done with " << test->Name << std::endl;
     	    }
     	  }
       }
 
-      virtual void Run(MessageList& messages, const std::string& nameFilter) {
+      virtual void run(MessageList& messages, const std::string& nameFilter) {
       	using namespace boost;
         NameFilter = nameFilter;
         for (AutoRegister* cur = FirstTest; cur != 0; cur = cur->Next) {
@@ -167,7 +167,7 @@ namespace scope {
       runner.setDebug(true);
     }
     std::string nameFilter(argc > 2 && debug != argv[2] ? argv[2]: "");
-    runner.Run(msgs, nameFilter);
+    runner.run(msgs, nameFilter);
 
     for(MessageList::const_iterator it(msgs.begin()); it != msgs.end(); ++it) {
       out << *it << '\n';

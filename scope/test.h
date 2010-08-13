@@ -61,12 +61,12 @@ namespace scope {
     Test(const std::string& name): TestCommon(name) {}
     virtual ~Test() {}
 
-    void Run(MessageList& messages) {
+    void Run(MessageList& messages) const {
       _Run(messages);
     }
 
   private:
-    virtual void _Run(MessageList& messages) = 0;
+    virtual void _Run(MessageList& messages) const = 0;
   };
 
   class BoundTest : public Test {
@@ -77,7 +77,7 @@ namespace scope {
       Test(name), Fn(fn) {}
     
   private:
-    virtual void _Run(MessageList& messages) {
+    virtual void _Run(MessageList& messages) const {
       RunFunction(Fn, Name.c_str(), messages);
     }
   };
@@ -87,7 +87,7 @@ namespace scope {
     SetTest(const std::string& name): Test(name) {}
 
   private:
-    virtual void _Run(MessageList&) {}
+    virtual void _Run(MessageList&) const {}
   };
   
   template<class FixtureType> FixtureType* DefaultFixtureConstruct() {
@@ -105,7 +105,7 @@ namespace scope {
     FixtureTest(const std::string& name, FixtureTestFunction fn, FixtureCtorFunction ctor): Test(name), Fn(fn), Ctor(ctor) {}
 
   private:
-    virtual void _Run(MessageList& messages) {
+    virtual void _Run(MessageList& messages) const {
       try {
         FixtureT *fixture((*Ctor)());
         try {
@@ -158,8 +158,8 @@ namespace scope {
   public:
     static TestRunner& Get(void);
 
-    virtual void RunTest(Test& test, MessageList& messages) = 0;
-    virtual void Run(MessageList& messages, const std::string& nameFilter = "") = 0;
+    virtual void runTest(const Test* const test, MessageList& messages) = 0;
+    virtual void run(MessageList& messages, const std::string& nameFilter = "") = 0;
 
 //    virtual size_t Add(TestPtr test) = 0;
 
