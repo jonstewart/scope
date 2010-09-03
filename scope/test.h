@@ -9,6 +9,7 @@
 #include <stdexcept>
 #include <sstream>
 #include <list>
+#include <vector>
 
 namespace scope {
   typedef std::list< std::string > MessageList; // need to replace this with an output iterator
@@ -45,6 +46,30 @@ namespace scope {
         buf << msg << " ";
       }
       buf << "Expected: " << e << ", Actual: " << a;
+      throw ExceptionType(file, line, buf.str().c_str());
+    }
+  }
+
+  template<typename ExceptionType, typename ElementT>
+  void eval_equal(const std::vector< ElementT >& e, const std::vector< ElementT >& a, const char* const file, int line, const char* msg = "") {
+    if (e.size() == a.size()) {
+      for (unsigned int i = 0; i < e.size(); ++i) {
+        if (e[i] != a[i]) {
+          std::stringstream buf;
+          if (*msg) {
+            buf << msg << " ";
+          }
+          buf << "Expected[" << i << "]: " << e[i] << ", Actual[" << i << "]: " << a[i];
+          throw ExceptionType(file, line, buf.str().c_str());
+        }
+      }
+    }
+    else {
+      std::stringstream buf;
+      if (*msg) {
+        buf << msg << " ";
+      }
+      buf << "Expected size: " << e.size() << ", Actual size: " << a.size();
       throw ExceptionType(file, line, buf.str().c_str());
     }
   }
