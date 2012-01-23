@@ -313,7 +313,7 @@ namespace scope {
 
 #define SCOPE_TEST(testname) \
   void testname(void);      \
-  SCOPE_TEST_AUTO_REGISTRATION(testname); \
+  SCOPE_TEST_AUTO_REGISTRATION(testname) \
   void testname(void)
 
 #define SCOPE_SET_WITH_NAME(setidentifier, setname) \
@@ -341,7 +341,7 @@ namespace scope {
 
 #define SCOPE_FIXTURE(testname, fixtureType) \
   void testname(fixtureType& fixture); \
-  SCOPE_FIXTURE_AUTO_REGISTRATION(fixtureType, testname, &DefaultFixtureConstruct<fixtureType>); \
+  SCOPE_FIXTURE_AUTO_REGISTRATION(fixtureType, testname, &DefaultFixtureConstruct<fixtureType>) \
   void testname(fixtureType& fixture)
 
 #define SCOPE_FIXTURE_CTOR(testname, fixtureType, ctorExpr) \
@@ -349,7 +349,7 @@ namespace scope {
   namespace scope { namespace user_defined { namespace { namespace SCOPE_CAT(testname, ns) { \
     fixtureType* fixConstruct() { return new ctorExpr; } \
   } } } } \
-  SCOPE_FIXTURE_AUTO_REGISTRATION(fixtureType, testname, scope::user_defined::SCOPE_CAT(testname, ns)::fixConstruct); \
+  SCOPE_FIXTURE_AUTO_REGISTRATION(fixtureType, testname, scope::user_defined::SCOPE_CAT(testname, ns)::fixConstruct) \
   void testname(fixtureType& fixture)
 
 #define SCOPE_ASSERT_THROW(condition, exceptiontype) \
