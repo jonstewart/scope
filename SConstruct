@@ -4,5 +4,16 @@
 import os
 import glob
 
-env = Environment(ENV = os.environ, CCFLAGS = '-Wall -Wextra')
+vars = Variables('build_variables.py')
+vars.AddVariables(
+  ('boostType', 'Suffix to add to Boost libraries to enable finding them', ''),
+  ('CC', 'set the name of the C compiler to use (scons finds default)', ''),
+  ('CXX', 'set the name of the C++ compiler to use (scons finds default)', ''),
+  ('CXXFLAGS', 'add flags for the C++ compiler to CXXFLAGS', '-std=c++11 -stdlib=libc++'),
+  ('LINKFLAGS', 'add flags for the linker to LINKFLAGS', '-stdlib=libc++')
+)
+
+env = Environment(ENV = os.environ, CCFLAGS = '-Wall -Wextra', variables = vars)
 env.Command('dummy', env.Program('test', glob.glob('*.cpp')), './$SOURCE')
+
+vars.Save('build_variables.py', env)
