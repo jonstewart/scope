@@ -133,21 +133,32 @@ namespace scope {
   private:
     virtual void _Run(MessageList& messages) const {
       FixtureT* fixture;
+      bool setup = true;
       try {
+        // std::cerr << "constructing fixture " << Name << std::endl;
         fixture = (*Ctor)();
+        // std::cerr << "constructed fixture " << std::endl;
       }
       catch(test_failure& fail) {
         messages.push_back(Name + ": " + fail.what());
+        setup = false;
       }
       catch(std::exception& except) {
         messages.push_back(Name + ": " + except.what());
+        setup = false;
       }
       catch(...) {
         CaughtBadExceptionType(Name, "setup threw unknown exception type");
+        setup = false;
         throw;
       }
+      if (!setup) {
+        return;
+      }
       try {
+        // std::cerr << "running test" << std::endl;
 	      (*Fn)(*fixture);
+        // std::cerr << "ran test" << std::endl;
       }
       catch(test_failure& fail) {
         std::stringstream buf;
