@@ -6,6 +6,7 @@
 #pragma once
 
 #include <cassert>
+#include <csignal>
 #include <iostream>
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/depth_first_search.hpp>
@@ -70,6 +71,7 @@ namespace scope {
 
       virtual void runTest(const Test* const test, MessageList& messages) {
         if (dynamic_cast<const SetTest*>(test) == 0 && (NameFilter.empty() || NameFilter == test->Name)) {
+          LastTest = test->Name;
           if (Debug) {
             std::cerr << "Running " << test->Name << std::endl;
           }
@@ -142,12 +144,17 @@ namespace scope {
         Debug = val;
       }
 
+      virtual std::string lastTest() const {
+        return LastTest;
+      }
+
     private:
       TestGraph Graph;
       TestMap   Tests;
       AutoRegister* FirstTest;
       CreateEdge*   FirstEdge;
-      std::string   NameFilter;
+      std::string   NameFilter,
+                    LastTest;
       unsigned int  NumTests,
                     NumRun;
       bool          Debug;
@@ -159,15 +166,45 @@ namespace scope {
     return singleton;
   }
 
+  std::map<int, std::string> signalMap() {
+    return std::map<int, std::string > {
+      {SIGFPE, "floating point exception (SIGFPE)"},
+      {SIGSEGV, "segmentation fault (SIGSEGV)"},
+      {SIGBUS, "bus error (unaligned memory access, SIGBUS)"},
+      {SIGTERM, "termination request (SIGTERM)"},
+      {SIGINT, "interrupt request (SIGINT)"},
+      {SIGQUIT, "quit request (SIGQUIT)"}
+    };
+  }
+
+  void handleSignal(int signum) {
+    auto friendlySig = signalMap()[signum];
+    std::cerr << "Received signal " << signum << ", " << friendlySig
+      << ". Last test was " << TestRunner::Get().lastTest() << ". Terminating." << std::endl;
+    std::terminate();
+  }
+
+  template<typename HandlerT>
+  void setHandlers(HandlerT handler) {
+    auto sigmap = signalMap();
+    for (auto sig: sigmap) {
+      std::signal(sig.first, handler);
+    }
+  }
+
   bool DefaultRun(std::ostream& out, int argc, char** argv) {
     MessageList msgs;
     TestRunner &runner(TestRunner::Get());
     std::string debug("--debug");
     if ((argc == 3 && debug == argv[2]) || (argc == 4 && debug == argv[3])) {
       runner.setDebug(true);
+      out << "Running in debug mode" << std::endl;
     }
     std::string nameFilter(argc > 2 && debug != argv[2] ? argv[2]: "");
+
+    setHandlers(handleSignal);
     runner.run(msgs, nameFilter);
+    setHandlers(SIG_DFL);
 
     for(MessageList::const_iterator it(msgs.begin()); it != msgs.end(); ++it) {
       out << *it << '\n';
