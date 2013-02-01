@@ -170,10 +170,8 @@ namespace scope {
     return std::map<int, std::string > {
       {SIGFPE, "floating point exception (SIGFPE)"},
       {SIGSEGV, "segmentation fault (SIGSEGV)"},
-      {SIGBUS, "bus error (unaligned memory access, SIGBUS)"},
       {SIGTERM, "termination request (SIGTERM)"},
-      {SIGINT, "interrupt request (SIGINT)"},
-      {SIGQUIT, "quit request (SIGQUIT)"}
+      {SIGINT, "interrupt request (SIGINT)"}
     };
   }
 
