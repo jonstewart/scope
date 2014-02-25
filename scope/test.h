@@ -139,15 +139,15 @@ namespace scope {
         fixture = (*Ctor)();
         // std::cerr << "constructed fixture " << std::endl;
       }
-      catch(test_failure& fail) {
+      catch (const test_failure& fail) {
         messages.push_back(Name + ": " + fail.what());
         setup = false;
       }
-      catch(std::exception& except) {
+      catch (const std::exception& except) {
         messages.push_back(Name + ": " + except.what());
         setup = false;
       }
-      catch(...) {
+      catch (...) {
         CaughtBadExceptionType(Name, "setup threw unknown exception type");
         setup = false;
         throw;
@@ -160,15 +160,15 @@ namespace scope {
 	      (*Fn)(*fixture);
         // std::cerr << "ran test" << std::endl;
       }
-      catch(test_failure& fail) {
+      catch (const test_failure& fail) {
         std::stringstream buf;
         buf << fail.File << ":" << fail.Line << ": " << Name << ": " << fail.what();
 	      messages.push_back(buf.str());
       }
-      catch(std::exception& except) {
+      catch (const std::exception& except) {
 	      messages.push_back(Name + ": " + except.what());
       }
-      catch(...) {
+      catch (...) {
         CaughtBadExceptionType(Name, "test threw unknown exception type, fixture will leak");
 	      throw;
       }
@@ -177,15 +177,15 @@ namespace scope {
 	      delete fixture;
         // std::cerr << "deleted fixture" << std::endl;
       }
-      catch(test_failure& fail) {
+      catch (const test_failure& fail) {
         // std::cerr << "fixture destructor threw test_failure" << std::endl;
 	      messages.push_back(Name + ": " + fail.what());
       }
-      catch(std::exception& except) {
+      catch (const std::exception& except) {
         // std::cerr << "fixture destructor threw std::exception" << std::endl;
 	      messages.push_back(Name + ": " + except.what());
       }
-      catch(...) {
+      catch (...) {
         // std::cerr << "fixture destructor threw something" << std::endl;
         CaughtBadExceptionType(Name, "teardown threw unknown exception type");
 	      throw;
@@ -388,6 +388,6 @@ namespace scope {
     statement; \
     throw scope::test_failure(__FILE__, __LINE__, "Expected exception not caught"); \
   } \
-  catch(exception&) { \
+  catch (const exception&) { \
     ; \
   }
