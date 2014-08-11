@@ -20,15 +20,15 @@ namespace scope {
     try {
       test();
     }
-    catch(test_failure& fail) {
+    catch (const test_failure& fail) {
       std::stringstream buf;
       buf << fail.File << ":" << fail.Line << ": " << testname << ": " << fail.what();
       messages.push_back(buf.str());
     }
-    catch(std::exception& except) {
+    catch (const std::exception& except) {
       messages.push_back(std::string(testname) + ": " + except.what());
     }
-    catch(...) {
+    catch (...) {
       CaughtBadExceptionType(testname, "test threw unrecognized type");
       throw;
     }
@@ -38,13 +38,13 @@ namespace scope {
     std::cerr << name << ": " << msg << "; please at least inherit from std::exception" << std::endl;
   }
 
-  typedef boost::adjacency_list< boost::vecS, boost::vecS, boost::directedS, boost::property< boost::vertex_color_t, boost::default_color_type > > TestGraph;
+  typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::directedS, boost::property<boost::vertex_color_t, boost::default_color_type>> TestGraph;
   typedef boost::graph_traits<TestGraph>::vertex_descriptor Vertex;
   typedef boost::graph_traits<TestGraph>::vertex_iterator VertexIter;
   typedef boost::property_map<TestGraph, boost::vertex_color_t>::type Color;
   typedef boost::property_map<TestGraph, boost::vertex_index_t>::type IndexMap;
-  typedef boost::shared_ptr< Test > TestPtr;
-  typedef std::vector< TestPtr > TestMap;
+  typedef boost::shared_ptr<Test> TestPtr;
+  typedef std::vector<TestPtr> TestMap;
 
   class TestVisitor : public boost::default_dfs_visitor {
   public:
@@ -94,7 +94,7 @@ namespace scope {
         }
       	TestVisitor vis(*this, Tests, messages);
       	depth_first_search(Graph, vis, get(vertex_color, Graph));
-    	/*	for(std::pair< VertexIter, VertexIter > vipair(vertices(Graph)); vipair.first != vipair.second; ++vipair.first) {
+        /*	for (std::pair<VertexIter, VertexIter> vipair(vertices(Graph)); vipair.first != vipair.second; ++vipair.first) {
     	  Tests[get(vertex_index, Graph)[*vipair.first]]->Run(messages);
     	  }*/
       }
@@ -167,7 +167,7 @@ namespace scope {
   }
 
   std::map<int, std::string> signalMap() {
-    return std::map<int, std::string > {
+    return std::map<int, std::string> {
       {SIGFPE, "floating point exception (SIGFPE)"},
       {SIGSEGV, "segmentation fault (SIGSEGV)"},
       {SIGTERM, "termination request (SIGTERM)"},

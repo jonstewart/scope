@@ -13,7 +13,7 @@
 // #include <iostream>
 
 namespace scope {
-  typedef std::list< std::string > MessageList; // need to replace this with an output iterator
+  typedef std::list<std::string> MessageList; // need to replace this with an output iterator
   typedef void (*TestFunction)(void);
 
   void RunFunction(TestFunction test, const char* testname, MessageList& messages);
@@ -39,7 +39,7 @@ namespace scope {
     }
   }
 
-  template<typename ExceptionType, typename ExpectedT, typename ActualT > // it'd be good to have a CTAssert on (ExpectedT==ActualT)
+  template<typename ExceptionType, typename ExpectedT, typename ActualT> // it'd be good to have a CTAssert on (ExpectedT==ActualT)
   void eval_equal(ExpectedT e, ActualT a, const char* const file, int line, const char* msg = "") {
     if (!((e) == (a))) {
       std::stringstream buf;
@@ -52,7 +52,7 @@ namespace scope {
   }
 
   template<typename ExceptionType, typename ElementT>
-  void eval_equal(const std::vector< ElementT >& e, const std::vector< ElementT >& a, const char* const file, int line, const char* msg = "") {
+  void eval_equal(const std::vector<ElementT>& e, const std::vector<ElementT>& a, const char* const file, int line, const char* msg = "") {
     if (e.size() == a.size()) {
       for (unsigned int i = 0; i < e.size(); ++i) {
         if (e[i] != a[i]) {
@@ -372,16 +372,16 @@ namespace scope {
   void testname(fixtureType& fixture)
 
 #define SCOPE_ASSERT_THROW(condition, exceptiontype) \
-  scope::eval_condition< exceptiontype >((condition) ? true: false, __FILE__, __LINE__, #condition)
+  scope::eval_condition<exceptiontype>((condition) ? true: false, __FILE__, __LINE__, #condition)
 
 #define SCOPE_ASSERT(condition) \
   SCOPE_ASSERT_THROW(condition, scope::test_failure)
   
 #define SCOPE_ASSERT_EQUAL(expected, actual) \
-  scope::eval_equal< scope::test_failure >((expected), (actual), __FILE__, __LINE__)
+  scope::eval_equal<scope::test_failure>((expected), (actual), __FILE__, __LINE__)
 
 #define SCOPE_ASSERT_EQUAL_MSG(expected, actual, msg) \
-  scope::eval_equal< scope::test_failure >((expected), (actual), __FILE__, __LINE__, msg)
+  scope::eval_equal<scope::test_failure>((expected), (actual), __FILE__, __LINE__, msg)
 
 #define SCOPE_EXPECT(statement, exception) \
   try { \
