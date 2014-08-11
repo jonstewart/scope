@@ -26,8 +26,8 @@ namespace scope {
 
     virtual ~test_failure() {}
     
-    const char *const File;
-    int               Line;
+    std::string File;
+    int Line;
   };
   
   template<typename ExceptionType>
