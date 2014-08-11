@@ -42,7 +42,7 @@ namespace scope {
   template<typename ExceptionType, typename ExpectedT, typename ActualT> // it'd be good to have a CTAssert on (ExpectedT==ActualT)
   void eval_equal(ExpectedT e, ActualT a, const char* const file, int line, const char* msg = "") {
     if (!((e) == (a))) {
-      std::stringstream buf;
+      std::ostringstream buf;
       if (*msg) {
         buf << msg << " ";
       }
@@ -56,7 +56,7 @@ namespace scope {
     if (e.size() == a.size()) {
       for (unsigned int i = 0; i < e.size(); ++i) {
         if (e[i] != a[i]) {
-          std::stringstream buf;
+          std::ostringstream buf;
           if (*msg) {
             buf << msg << " ";
           }
@@ -66,7 +66,7 @@ namespace scope {
       }
     }
     else {
-      std::stringstream buf;
+      std::ostringstream buf;
       if (*msg) {
         buf << msg << " ";
       }
@@ -161,7 +161,7 @@ namespace scope {
         // std::cerr << "ran test" << std::endl;
       }
       catch (const test_failure& fail) {
-        std::stringstream buf;
+        std::ostringstream buf;
         buf << fail.File << ":" << fail.Line << ": " << Name << ": " << fail.what();
 	      messages.push_back(buf.str());
       }

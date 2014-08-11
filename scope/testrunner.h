@@ -21,7 +21,7 @@ namespace scope {
       test();
     }
     catch (const test_failure& fail) {
-      std::stringstream buf;
+      std::ostringstream buf;
       buf << fail.File << ":" << fail.Line << ": " << testname << ": " << fail.what();
       messages.push_back(buf.str());
     }
