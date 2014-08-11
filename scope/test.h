@@ -24,7 +24,7 @@ namespace scope {
     test_failure(const char* const file, int line, const char *const message):
       std::runtime_error(message), File(file), Line(line) {}
 
-    virtual ~test_failure() throw() {}
+    virtual ~test_failure() {}
     
     const char *const File;
     int               Line;
