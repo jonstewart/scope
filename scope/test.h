@@ -54,7 +54,7 @@ namespace scope {
   template<typename ExceptionType, typename ElementT>
   void eval_equal(const std::vector<ElementT>& e, const std::vector<ElementT>& a, const char* const file, int line, const char* msg = "") {
     if (e.size() == a.size()) {
-      for (unsigned int i = 0; i < e.size(); ++i) {
+      for (size_t i = 0; i < e.size(); ++i) {
         if (e[i] != a[i]) {
           std::ostringstream buf;
           if (*msg) {

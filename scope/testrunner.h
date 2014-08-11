@@ -67,10 +67,11 @@ namespace scope {
     class TestRunnerImpl : public TestRunner {
     public:
       TestRunnerImpl():
-        FirstTest(0), FirstEdge(0), NumTests(0), NumRun(0), Debug(false) {}
+        FirstTest(nullptr), FirstEdge(nullptr),
+        NumTests(0), NumRun(0), Debug(false) {}
 
       virtual void runTest(const Test* const test, MessageList& messages) {
-        if (dynamic_cast<const SetTest*>(test) == 0 && (NameFilter.empty() || NameFilter == test->Name)) {
+        if (!dynamic_cast<const SetTest*>(test) && (NameFilter.empty() || NameFilter == test->Name)) {
           LastTest = test->Name;
           if (Debug) {
             std::cerr << "Running " << test->Name << std::endl;
@@ -86,7 +87,7 @@ namespace scope {
       virtual void run(MessageList& messages, const std::string& nameFilter) {
       	using namespace boost;
         NameFilter = nameFilter;
-        for (AutoRegister* cur = FirstTest; cur != 0; cur = cur->Next) {
+        for (AutoRegister* cur = FirstTest; cur; cur = cur->Next) {
           Add(TestPtr(cur->Construct()));
         }
         for (CreateEdge* cur = FirstEdge; cur; cur = cur->Next) {
@@ -120,7 +121,7 @@ namespace scope {
       }
 
       virtual void addTest(AutoRegister& test) {
-        if (0 == FirstTest) {
+        if (!FirstTest) {
           FirstTest = &test;
         }
         else {
@@ -192,7 +193,7 @@ namespace scope {
 
   bool DefaultRun(std::ostream& out, int argc, char** argv) {
     MessageList msgs;
-    TestRunner &runner(TestRunner::Get());
+    TestRunner& runner(TestRunner::Get());
     std::string debug("--debug");
     if ((argc == 3 && debug == argv[2]) || (argc == 4 && debug == argv[3])) {
       runner.setDebug(true);
@@ -204,9 +205,10 @@ namespace scope {
     runner.run(msgs, nameFilter);
     setHandlers(SIG_DFL);
 
-    for(MessageList::const_iterator it(msgs.begin()); it != msgs.end(); ++it) {
-      out << *it << '\n';
+    for(const std::string& m : msgs) {
+      out << m << '\n';
     }
+
     if (msgs.begin() == msgs.end()) {
       out << "OK (" << runner.numRun() << " tests)" << std::endl;
       return true;
