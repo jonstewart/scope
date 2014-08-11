@@ -1,6 +1,6 @@
 /*
-	© 2009, Jon Stewart
-	Released under the terms of the Boost license (http://www.boost.org/LICENSE_1_0.txt). See License.txt for details.
+  © 2009, Jon Stewart
+  Released under the terms of the Boost license (http://www.boost.org/LICENSE_1_0.txt). See License.txt for details.
 */
 
 #pragma once
@@ -48,19 +48,19 @@ namespace scope {
 
   class TestVisitor : public boost::default_dfs_visitor {
   public:
-  	TestVisitor(TestRunner& runner, TestMap& tests, MessageList& messages): Runner(runner), Tests(tests), Messages(messages) {}
+    TestVisitor(TestRunner& runner, TestMap& tests, MessageList& messages): Runner(runner), Tests(tests), Messages(messages) {}
 
-  	template <typename Vertex, typename Graph> void discover_vertex(Vertex v, const Graph& g) const {
-  	  using namespace boost;
-  	  //std::cerr << "Running " << Tests[get(vertex_index, g)[v]]->Name << "\n";
+    template <typename Vertex, typename Graph> void discover_vertex(Vertex v, const Graph& g) const {
+      using namespace boost;
+      //std::cerr << "Running " << Tests[get(vertex_index, g)[v]]->Name << "\n";
       TestPtr t(Tests[get(vertex_index, g)[v]]);
       Runner.runTest(t.get(), Messages);
-  	}
+    }
 
   private:
     TestRunner& Runner;
-  	TestMap& Tests;
-  	MessageList& Messages;
+    TestMap& Tests;
+    MessageList& Messages;
   };
 
   namespace {
@@ -77,15 +77,15 @@ namespace scope {
             std::cerr << "Running " << test->Name << std::endl;
           }
           ++NumRun;
-    	    test->Run(messages);
-    	    if (Debug) {
+          test->Run(messages);
+          if (Debug) {
             std::cerr << "Done with " << test->Name << std::endl;
-    	    }
-    	  }
+          }
+        }
       }
 
       virtual void run(MessageList& messages, const std::string& nameFilter) {
-      	using namespace boost;
+        using namespace boost;
         NameFilter = nameFilter;
         for (AutoRegister* cur = FirstTest; cur; cur = cur->Next) {
           Add(TestPtr(cur->Construct()));
@@ -93,31 +93,31 @@ namespace scope {
         for (CreateEdge* cur = FirstEdge; cur; cur = cur->Next) {
           CreateLink(cur->From, cur->To);
         }
-      	TestVisitor vis(*this, Tests, messages);
-      	depth_first_search(Graph, vis, get(vertex_color, Graph));
-        /*	for (std::pair<VertexIter, VertexIter> vipair(vertices(Graph)); vipair.first != vipair.second; ++vipair.first) {
-    	  Tests[get(vertex_index, Graph)[*vipair.first]]->Run(messages);
-    	  }*/
+        TestVisitor vis(*this, Tests, messages);
+        depth_first_search(Graph, vis, get(vertex_color, Graph));
+        /*  for (std::pair<VertexIter, VertexIter> vipair(vertices(Graph)); vipair.first != vipair.second; ++vipair.first) {
+        Tests[get(vertex_index, Graph)[*vipair.first]]->Run(messages);
+        }*/
       }
 
       virtual size_t Add(TestPtr test) {
-      	using namespace boost;
-      	Vertex v(add_vertex(Graph));
-      	size_t ret = get(vertex_index, Graph)[v];
-      	assert(ret == Tests.size());
-      	Tests.push_back(test);
-      	if (!dynamic_pointer_cast<SetTest>(test)) {
+        using namespace boost;
+        Vertex v(add_vertex(Graph));
+        size_t ret = get(vertex_index, Graph)[v];
+        assert(ret == Tests.size());
+        Tests.push_back(test);
+        if (!dynamic_pointer_cast<SetTest>(test)) {
           ++NumTests;
-      	}
-      	return ret;
+        }
+        return ret;
       }
 
       virtual void CreateLink(const AutoRegister& from, const AutoRegister& to) {
-      	FastCreateLink(from, to); // we should check for cycles. maybe?
+        FastCreateLink(from, to); // we should check for cycles. maybe?
       }
 
       virtual void FastCreateLink(const AutoRegister& from, const AutoRegister& to) {
-      	boost::add_edge(from.Index, to.Index, Graph);
+        boost::add_edge(from.Index, to.Index, Graph);
       }
 
       virtual void addTest(AutoRegister& test) {

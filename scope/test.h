@@ -1,6 +1,6 @@
 /*
-	© 2009, Jon Stewart
-	Released under the terms of the Boost license (http://www.boost.org/LICENSE_1_0.txt). See License.txt for details.
+  © 2009, Jon Stewart
+  Released under the terms of the Boost license (http://www.boost.org/LICENSE_1_0.txt). See License.txt for details.
 */
 
 #pragma once
@@ -157,38 +157,38 @@ namespace scope {
       }
       try {
         // std::cerr << "running test" << std::endl;
-	      (*Fn)(*fixture);
+        (*Fn)(*fixture);
         // std::cerr << "ran test" << std::endl;
       }
       catch (const test_failure& fail) {
         std::ostringstream buf;
         buf << fail.File << ":" << fail.Line << ": " << Name << ": " << fail.what();
-	      messages.push_back(buf.str());
+        messages.push_back(buf.str());
       }
       catch (const std::exception& except) {
-	      messages.push_back(Name + ": " + except.what());
+        messages.push_back(Name + ": " + except.what());
       }
       catch (...) {
         CaughtBadExceptionType(Name, "test threw unknown exception type, fixture will leak");
-	      throw;
+        throw;
       }
       try {
         // std::cerr << "deleting fixture" << std::endl;
-	      delete fixture;
+        delete fixture;
         // std::cerr << "deleted fixture" << std::endl;
       }
       catch (const test_failure& fail) {
         // std::cerr << "fixture destructor threw test_failure" << std::endl;
-	      messages.push_back(Name + ": " + fail.what());
+        messages.push_back(Name + ": " + fail.what());
       }
       catch (const std::exception& except) {
         // std::cerr << "fixture destructor threw std::exception" << std::endl;
-	      messages.push_back(Name + ": " + except.what());
+        messages.push_back(Name + ": " + except.what());
       }
       catch (...) {
         // std::cerr << "fixture destructor threw something" << std::endl;
         CaughtBadExceptionType(Name, "teardown threw unknown exception type");
-	      throw;
+        throw;
       }
     }
   };
