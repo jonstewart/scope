@@ -10,6 +10,7 @@
 #include <sstream>
 #include <list>
 #include <vector>
+// #include <iostream>
 
 namespace scope {
   typedef std::list< std::string > MessageList; // need to replace this with an output iterator
@@ -131,46 +132,63 @@ namespace scope {
 
   private:
     virtual void _Run(MessageList& messages) const {
+      FixtureT* fixture;
+      bool setup = true;
       try {
-        FixtureT *fixture((*Ctor)());
-        try {
-  	      (*Fn)(*fixture);
-        }
-        catch(test_failure& fail) {
-          std::stringstream buf;
-          buf << fail.File << ":" << fail.Line << ": " << Name << ": " << fail.what();
-  	      messages.push_back(buf.str());
-        }
-        catch(std::exception& except) {
-  	      messages.push_back(Name + ": " + except.what());
-        }
-        catch(...) {
-          CaughtBadExceptionType(Name, "test threw unknown exception type");
-  	      throw;
-        }
-        try {
-  	      delete fixture;
-        }
-        catch(test_failure& fail) {
-  	      messages.push_back(Name + ": " + fail.what());
-        }
-        catch(std::exception& except) {
-  	      messages.push_back(Name + ": " + except.what());
-        }
-        catch(...) {
-          CaughtBadExceptionType(Name, "teardown threw unknown exception type");
-  	      throw;
-        }
+        // std::cerr << "constructing fixture " << Name << std::endl;
+        fixture = (*Ctor)();
+        // std::cerr << "constructed fixture " << std::endl;
       }
-      catch(test_failure& fail) {
+      catch (const test_failure& fail) {
         messages.push_back(Name + ": " + fail.what());
+        setup = false;
       }
-      catch(std::exception& except) {
+      catch (const std::exception& except) {
         messages.push_back(Name + ": " + except.what());
+        setup = false;
       }
-      catch(...) {
+      catch (...) {
         CaughtBadExceptionType(Name, "setup threw unknown exception type");
+        setup = false;
         throw;
+      }
+      if (!setup) {
+        return;
+      }
+      try {
+        // std::cerr << "running test" << std::endl;
+	      (*Fn)(*fixture);
+        // std::cerr << "ran test" << std::endl;
+      }
+      catch (const test_failure& fail) {
+        std::stringstream buf;
+        buf << fail.File << ":" << fail.Line << ": " << Name << ": " << fail.what();
+	      messages.push_back(buf.str());
+      }
+      catch (const std::exception& except) {
+	      messages.push_back(Name + ": " + except.what());
+      }
+      catch (...) {
+        CaughtBadExceptionType(Name, "test threw unknown exception type, fixture will leak");
+	      throw;
+      }
+      try {
+        // std::cerr << "deleting fixture" << std::endl;
+	      delete fixture;
+        // std::cerr << "deleted fixture" << std::endl;
+      }
+      catch (const test_failure& fail) {
+        // std::cerr << "fixture destructor threw test_failure" << std::endl;
+	      messages.push_back(Name + ": " + fail.what());
+      }
+      catch (const std::exception& except) {
+        // std::cerr << "fixture destructor threw std::exception" << std::endl;
+	      messages.push_back(Name + ": " + except.what());
+      }
+      catch (...) {
+        // std::cerr << "fixture destructor threw something" << std::endl;
+        CaughtBadExceptionType(Name, "teardown threw unknown exception type");
+	      throw;
       }
     }
   };
@@ -194,6 +212,7 @@ namespace scope {
     virtual unsigned int numTests() const = 0;
     virtual unsigned int numRun() const = 0;
     virtual void setDebug(bool) = 0;
+    virtual std::string lastTest() const = 0;
 
   protected:
     TestRunner() {}
@@ -369,6 +388,6 @@ namespace scope {
     statement; \
     throw scope::test_failure(__FILE__, __LINE__, "Expected exception not caught"); \
   } \
-  catch(exception&) { \
+  catch (const exception&) { \
     ; \
   }
