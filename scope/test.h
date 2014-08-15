@@ -10,6 +10,7 @@
 #include <sstream>
 #include <list>
 #include <vector>
+#include <functional>
 // #include <iostream>
 
 namespace scope {
@@ -299,6 +300,13 @@ namespace scope {
 
     const AutoRegister  &From,
                         &To;
+  };
+
+  class FreeTest {
+  public:
+    FreeTest(const std::function<void(void)>&) {
+
+    }
   };
 
   namespace {
