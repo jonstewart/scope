@@ -1,6 +1,6 @@
 /*
-	© 2009, Jon Stewart
-	Released under the terms of the Boost license (http://www.boost.org/LICENSE_1_0.txt). See License.txt for details.
+  © 2009, Jon Stewart
+  Released under the terms of the Boost license (http://www.boost.org/LICENSE_1_0.txt). See License.txt for details.
 */
 
 #pragma once
@@ -14,7 +14,7 @@
 // #include <iostream>
 
 namespace scope {
-  typedef std::list< std::string > MessageList; // need to replace this with an output iterator
+  typedef std::list<std::string> MessageList; // need to replace this with an output iterator
   typedef void (*TestFunction)(void);
 
   void RunFunction(TestFunction test, const char* testname, MessageList& messages);
@@ -23,14 +23,12 @@ namespace scope {
   class test_failure : public std::runtime_error {
   public:
     test_failure(const char* const file, int line, const char *const message):
-      std::runtime_error(message), File(file), Line(line)
-      {
-      }
+      std::runtime_error(message), File(file), Line(line) {}
 
-    virtual ~test_failure() throw() {}
+    virtual ~test_failure() {}
     
-    const char *const File;
-    int               Line;
+    std::string File;
+    int Line;
   };
   
   template<typename ExceptionType>
@@ -40,10 +38,10 @@ namespace scope {
     }
   }
 
-  template<typename ExceptionType, typename ExpectedT, typename ActualT > // it'd be good to have a CTAssert on (ExpectedT==ActualT)
+  template<typename ExceptionType, typename ExpectedT, typename ActualT> // it'd be good to have a CTAssert on (ExpectedT==ActualT)
   void eval_equal(ExpectedT e, ActualT a, const char* const file, int line, const char* msg = "") {
     if (!((e) == (a))) {
-      std::stringstream buf;
+      std::ostringstream buf;
       if (*msg) {
         buf << msg << " ";
       }
@@ -53,11 +51,11 @@ namespace scope {
   }
 
   template<typename ExceptionType, typename ElementT>
-  void eval_equal(const std::vector< ElementT >& e, const std::vector< ElementT >& a, const char* const file, int line, const char* msg = "") {
+  void eval_equal(const std::vector<ElementT>& e, const std::vector<ElementT>& a, const char* const file, int line, const char* msg = "") {
     if (e.size() == a.size()) {
-      for (unsigned int i = 0; i < e.size(); ++i) {
+      for (size_t i = 0; i < e.size(); ++i) {
         if (e[i] != a[i]) {
-          std::stringstream buf;
+          std::ostringstream buf;
           if (*msg) {
             buf << msg << " ";
           }
@@ -67,7 +65,7 @@ namespace scope {
       }
     }
     else {
-      std::stringstream buf;
+      std::ostringstream buf;
       if (*msg) {
         buf << msg << " ";
       }
@@ -158,38 +156,38 @@ namespace scope {
       }
       try {
         // std::cerr << "running test" << std::endl;
-	      (*Fn)(*fixture);
+        (*Fn)(*fixture);
         // std::cerr << "ran test" << std::endl;
       }
       catch (const test_failure& fail) {
-        std::stringstream buf;
+        std::ostringstream buf;
         buf << fail.File << ":" << fail.Line << ": " << Name << ": " << fail.what();
-	      messages.push_back(buf.str());
+        messages.push_back(buf.str());
       }
       catch (const std::exception& except) {
-	      messages.push_back(Name + ": " + except.what());
+        messages.push_back(Name + ": " + except.what());
       }
       catch (...) {
         CaughtBadExceptionType(Name, "test threw unknown exception type, fixture will leak");
-	      throw;
+        throw;
       }
       try {
         // std::cerr << "deleting fixture" << std::endl;
-	      delete fixture;
+        delete fixture;
         // std::cerr << "deleted fixture" << std::endl;
       }
       catch (const test_failure& fail) {
         // std::cerr << "fixture destructor threw test_failure" << std::endl;
-	      messages.push_back(Name + ": " + fail.what());
+        messages.push_back(Name + ": " + fail.what());
       }
       catch (const std::exception& except) {
         // std::cerr << "fixture destructor threw std::exception" << std::endl;
-	      messages.push_back(Name + ": " + except.what());
+        messages.push_back(Name + ": " + except.what());
       }
       catch (...) {
         // std::cerr << "fixture destructor threw something" << std::endl;
         CaughtBadExceptionType(Name, "teardown threw unknown exception type");
-	      throw;
+        throw;
       }
     }
   };
@@ -380,16 +378,16 @@ namespace scope {
   void testname(fixtureType& fixture)
 
 #define SCOPE_ASSERT_THROW(condition, exceptiontype) \
-  scope::eval_condition< exceptiontype >((condition) ? true: false, __FILE__, __LINE__, #condition)
+  scope::eval_condition<exceptiontype>((condition) ? true: false, __FILE__, __LINE__, #condition)
 
 #define SCOPE_ASSERT(condition) \
   SCOPE_ASSERT_THROW(condition, scope::test_failure)
   
 #define SCOPE_ASSERT_EQUAL(expected, actual) \
-  scope::eval_equal< scope::test_failure >((expected), (actual), __FILE__, __LINE__)
+  scope::eval_equal<scope::test_failure>((expected), (actual), __FILE__, __LINE__)
 
 #define SCOPE_ASSERT_EQUAL_MSG(expected, actual, msg) \
-  scope::eval_equal< scope::test_failure >((expected), (actual), __FILE__, __LINE__, msg)
+  scope::eval_equal<scope::test_failure>((expected), (actual), __FILE__, __LINE__, msg)
 
 #define SCOPE_EXPECT(statement, exception) \
   try { \
