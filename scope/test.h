@@ -15,7 +15,7 @@
 
 namespace scope {
   typedef std::list<std::string> MessageList; // need to replace this with an output iterator
-  typedef void (*TestFunction)(void);
+  typedef std::function<void()> TestFunction;
 
   void RunFunction(TestFunction test, const char* testname, MessageList& messages);
   void CaughtBadExceptionType(const std::string& testname, const std::string& msg);
