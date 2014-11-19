@@ -167,6 +167,11 @@ namespace scope {
     return singleton;
   }
 
+  void handleTerminate() {
+    std::cerr << "std::terminate called, last test was " << TestRunner::Get().lastTest() << ". Aborting." << std::endl;
+    std::abort();
+  }
+
   std::map<int, std::string> signalMap() {
     return std::map<int, std::string> {
       {SIGFPE, "floating point exception (SIGFPE)"},
@@ -179,8 +184,8 @@ namespace scope {
   void handleSignal(int signum) {
     auto friendlySig = signalMap()[signum];
     std::cerr << "Received signal " << signum << ", " << friendlySig
-      << ". Last test was " << TestRunner::Get().lastTest() << ". Terminating." << std::endl;
-    std::terminate();
+      << ". Last test was " << TestRunner::Get().lastTest() << ". Aborting." << std::endl;
+    std::abort();
   }
 
   template<typename HandlerT>
@@ -202,7 +207,9 @@ namespace scope {
     std::string nameFilter(argc > 2 && debug != argv[2] ? argv[2]: "");
 
     setHandlers(handleSignal);
+    std::set_terminate(&handleTerminate);
     runner.run(msgs, nameFilter);
+    std::set_terminate(0);
     setHandlers(SIG_DFL);
 
     for(const std::string& m : msgs) {
