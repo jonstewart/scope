@@ -10,11 +10,130 @@
 #include <iostream>
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/depth_first_search.hpp>
-#include <boost/smart_ptr.hpp>
+#include <memory>
+#include <vector>
+#include <queue>
+#include <thread>
+#include <mutex>
+#include <condition_variable>
+#include <future>
+#include <stdexcept>
 
 #include "test.h"
 
 namespace scope {
+
+  class ThreadPool {
+  public:
+    ThreadPool(size_t numThreads);
+    ~ThreadPool();
+
+    // with future
+    template<class F, class... Args>
+    auto execute(F&& f, Args&&... args) 
+        -> std::future<typename std::result_of<F(Args...)>::type>;
+
+    // without future
+    void dispatch(std::function<void()>&& task);
+
+  private:
+    void exec();
+
+    // need to keep track of threads so we can join them
+    std::vector< std::thread > Workers;
+    // the task queue
+    std::queue< std::function<void()> > Tasks;
+    
+    // synchronization
+    std::mutex Mutex;
+    std::condition_variable HasWork;
+    bool Stop;
+  };
+
+  // the constructor just launches some amount of workers
+  ThreadPool::ThreadPool(size_t numThreads):
+    Stop(false)
+  {
+    for (size_t i = 0; i < numThreads; ++i) {
+      Workers.emplace_back(
+        [this] {
+          while (true)
+          {
+            std::function<void()> task;
+            {
+              std::unique_lock<std::mutex> lock(this->Mutex);
+              this->HasWork.wait(lock,
+                  [this]{ return this->Stop || !this->Tasks.empty(); });
+              if (this->Stop && this->Tasks.empty())
+                return;
+              task = std::move(this->Tasks.front());
+              this->Tasks.pop();
+            }
+            task();
+          }
+        }
+      );
+    }
+  }
+
+  void ThreadPool::exec() {
+    std::function<void()> task;
+    while (true) {
+      {
+        std::unique_lock<std::mutex> lock(Mutex);
+        HasWork.wait(lock,
+          [this]{ return this->Stop || !this->Tasks.empty(); }
+        );
+        if (Stop && Tasks.empty()) {
+          return;
+        }
+        task = std::move(Tasks.front());
+        Tasks.pop();
+      }
+      task();
+    }
+  }
+
+  // add new work item to the pool
+  template<class F, class... Args>
+  auto ThreadPool::execute(F&& f, Args&&... args) 
+      -> std::future<typename std::result_of<F(Args...)>::type>
+  {
+    using return_type = typename std::result_of<F(Args...)>::type;
+
+    auto task = std::make_shared< std::packaged_task<return_type()> >(
+            std::bind(std::forward<F>(f), std::forward<Args>(args)...)
+    );
+       
+    std::future<return_type> res = task->get_future();
+    dispatch([task](){ (*task)(); });
+    return res;
+  }
+
+  void ThreadPool::dispatch(std::function<void()>&& task) {
+    {
+      std::unique_lock<std::mutex> lock(Mutex);
+      // don't allow enqueueing after stopping the pool
+      if (Stop) {
+        throw std::runtime_error("dispatch on stopped ThreadPool");
+      }
+      Tasks.emplace(std::move(task));
+    }
+    HasWork.notify_one();
+  }
+
+  // the destructor joins all threads
+  inline ThreadPool::~ThreadPool()
+  {
+    {
+      std::unique_lock<std::mutex> lock(Mutex);
+      Stop = true;
+    }
+    HasWork.notify_all();
+    for (std::thread &worker: Workers) {
+      worker.join();
+    }
+  }
 
   void RunFunction(scope::TestFunction test, const char* testname, MessageList& messages) {
     try {
@@ -43,7 +162,7 @@ namespace scope {
   typedef boost::graph_traits<TestGraph>::vertex_iterator VertexIter;
   typedef boost::property_map<TestGraph, boost::vertex_color_t>::type Color;
   typedef boost::property_map<TestGraph, boost::vertex_index_t>::type IndexMap;
-  typedef boost::shared_ptr<Test> TestPtr;
+  typedef std::shared_ptr<Test> TestPtr;
   typedef std::vector<TestPtr> TestMap;
 
   class TestVisitor : public boost::default_dfs_visitor {
@@ -70,7 +189,15 @@ namespace scope {
         FirstTest(nullptr), FirstEdge(nullptr),
         NumTests(0), NumRun(0), Debug(false) {}
 
-      virtual void runTest(const Test* const test, MessageList& messages) {
+      void startTest(const std::string& test) {
+
+      }
+
+      void stopTest(const std::string& test) {
+
+      }
+
+      void runATest(const Test* const test, MessageList& messages) {
         if (!dynamic_cast<const SetTest*>(test) && (NameFilter.empty() || NameFilter == test->Name)) {
           LastTest = test->Name;
           if (Debug) {
@@ -84,6 +211,10 @@ namespace scope {
         }
       }
 
+      virtual void runTest(const Test* const test, MessageList& messages) {
+        Workers->dispatch(std::bind(&TestRunnerImpl::runATest, this, test, std::ref(messages)));
+      }
+
       virtual void run(MessageList& messages, const std::string& nameFilter) {
         using namespace boost;
         NameFilter = nameFilter;
@@ -93,11 +224,10 @@ namespace scope {
         for (CreateEdge* cur = FirstEdge; cur; cur = cur->Next) {
           CreateLink(cur->From, cur->To);
         }
+        Workers.reset(new ThreadPool(1));
         TestVisitor vis(*this, Tests, messages);
         depth_first_search(Graph, vis, get(vertex_color, Graph));
-        /*  for (std::pair<VertexIter, VertexIter> vipair(vertices(Graph)); vipair.first != vipair.second; ++vipair.first) {
-        Tests[get(vertex_index, Graph)[*vipair.first]]->Run(messages);
-        }*/
+        Workers.reset();
       }
 
       virtual size_t Add(TestPtr test) {
@@ -154,6 +284,10 @@ namespace scope {
       TestMap   Tests;
       AutoRegister* FirstTest;
       CreateEdge*   FirstEdge;
+      std::unique_ptr<ThreadPool> Workers;
+      std::mutex Mutex;
+      std::set<std::string> Running;
+
       std::string   NameFilter,
                     LastTest;
       unsigned int  NumTests,
