@@ -20,7 +20,7 @@ vars.AddVariables(
   ('CXX', 'set the name of the C++ compiler to use (scons finds default)', 'g++'),
   ('CXXFLAGS', 'add flags for the C++ compiler to CXXFLAGS', '-std=c++11 -Wall -Wextra'),
   ('CPPPATH', 'Include path for preprocessor', getVar('BOOST_ROOT', '/usr/local/include/boost')),
-  ('LINKFLAGS', 'add flags for the linker to LINKFLAGS', '')
+  ('LINKFLAGS', 'add flags for the linker to LINKFLAGS', '-pthread')
 )
 
 env = Environment(ENV = os.environ, variables = vars)

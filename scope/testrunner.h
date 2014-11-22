@@ -17,6 +17,7 @@
 #include <mutex>
 #include <condition_variable>
 #include <future>
+#include <atomic>
 #include <stdexcept>
 
 #include "test.h"
@@ -183,6 +184,9 @@ namespace scope {
   };
 
   namespace {
+
+    thread_local std::string LastTest;
+
     class TestRunnerImpl : public TestRunner {
     public:
       TestRunnerImpl():
@@ -190,29 +194,29 @@ namespace scope {
         NumTests(0), NumRun(0), Debug(false) {}
 
       void startTest(const std::string& test) {
-
+        LastTest = test;
+        if (Debug) {
+          std::cerr << "Running " << test << std::endl;
+        }
       }
 
       void stopTest(const std::string& test) {
-
+        if (Debug) {
+          std::cerr << "Done with " << test << std::endl;
+        }
+        ++NumRun;
       }
 
-      void runATest(const Test* const test, MessageList& messages) {
+      void doTest(const Test* const test, MessageList& messages) {
         if (!dynamic_cast<const SetTest*>(test) && (NameFilter.empty() || NameFilter == test->Name)) {
-          LastTest = test->Name;
-          if (Debug) {
-            std::cerr << "Running " << test->Name << std::endl;
-          }
-          ++NumRun;
+          startTest(test->Name);
           test->Run(messages);
-          if (Debug) {
-            std::cerr << "Done with " << test->Name << std::endl;
-          }
+          stopTest(test->Name);
         }
       }
 
       virtual void runTest(const Test* const test, MessageList& messages) {
-        Workers->dispatch(std::bind(&TestRunnerImpl::runATest, this, test, std::ref(messages)));
+        Workers->dispatch(std::bind(&TestRunnerImpl::doTest, this, test, std::ref(messages)));
       }
 
       virtual void run(MessageList& messages, const std::string& nameFilter) {
@@ -224,7 +228,7 @@ namespace scope {
         for (CreateEdge* cur = FirstEdge; cur; cur = cur->Next) {
           CreateLink(cur->From, cur->To);
         }
-        Workers.reset(new ThreadPool(1));
+        Workers.reset(new ThreadPool(std::max(std::thread::hardware_concurrency(), 1u)));
         TestVisitor vis(*this, Tests, messages);
         depth_first_search(Graph, vis, get(vertex_color, Graph));
         Workers.reset();
@@ -288,10 +292,11 @@ namespace scope {
       std::mutex Mutex;
       std::set<std::string> Running;
 
-      std::string   NameFilter,
-                    LastTest;
-      unsigned int  NumTests,
-                    NumRun;
+      std::string   NameFilter;
+
+      unsigned int  NumTests;
+      std::atomic<unsigned int> NumRun;
+
       bool          Debug;
     };
   }
@@ -302,6 +307,10 @@ namespace scope {
   }
 
   void handleTerminate() {
+    // amusingly, this is supposed to be a thread-safe function...
+    // even though it's not supposed to return
+    static std::mutex death;
+    std::unique_lock<std::mutex> grip(death);
     std::cerr << "std::terminate called, last test was " << TestRunner::Get().lastTest() << ". Aborting." << std::endl;
     std::abort();
   }
