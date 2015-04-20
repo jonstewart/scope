@@ -1,4 +1,4 @@
-© 2009, Jon Stewart
+Â© 2015, Jon Stewart
 
 Scope is a simple, lightweight unit testing framework for C++.
 
