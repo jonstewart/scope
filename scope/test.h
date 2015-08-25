@@ -38,8 +38,13 @@ namespace scope {
     }
   }
 
-  template<typename ExceptionType, typename ExpectedT, typename ActualT> // it'd be good to have a CTAssert on (ExpectedT==ActualT)
-  void eval_equal(ExpectedT e, ActualT a, const char* const file, int line, const char* msg = "") {
+  template<
+    typename ExceptionType,
+    typename ExpectedT,
+    typename ActualT
+  >
+  void eval_equal_impl(ExpectedT&& e, ActualT&& a, const char* const file, int line, const char* msg = "") {
+    // it'd be good to have a CTAssert on (ExpectedT==ActualT)
     if (!((e) == (a))) {
       std::ostringstream buf;
       if (*msg) {
@@ -50,6 +55,50 @@ namespace scope {
     }
   }
 
+  // policy for passing arguments to eval_equal by value
+  template <typename L, typename R>
+  using pass_by_value = std::integral_constant<bool,
+    (!std::is_class<L>::value &&
+      std::is_convertible<const L, const R>::value) ||
+    (!std::is_class<R>::value &&
+      std::is_convertible<const R, const L>::value)
+  >;
+
+  // eval_equal for arguments passed by value
+  template<
+    typename ExceptionType,
+    typename ExpectedT,
+    typename ActualT,
+    typename = typename std::enable_if<
+      pass_by_value<ExpectedT, ActualT>::value
+    >::type
+  >
+  void eval_equal(const ExpectedT e, const ActualT a, const char* const file, int line, const char* msg = "") {
+    eval_equal_impl<ExceptionType>(
+      std::forward<const ExpectedT>(e),
+      std::forward<const ActualT>(a),
+      file, line, msg
+    );
+  }
+
+  // eval_equal for arguments passed by const reference
+  template <
+    typename ExceptionType,
+    typename ExpectedT,
+    typename ActualT,
+    typename = typename std::enable_if<
+      !pass_by_value<ExpectedT, ActualT>::value
+    >::type
+  >
+  void eval_equal(const ExpectedT& e, const ActualT& a, const char* const file, int line, const char* msg = "") {
+    eval_equal_impl<ExceptionType>(
+      std::forward<const ExpectedT>(e),
+      std::forward<const ActualT>(a),
+      file, line, msg
+    );
+  }
+
+  // eval_equal for std::vector
   template<typename ExceptionType, typename ElementT>
   void eval_equal(const std::vector<ElementT>& e, const std::vector<ElementT>& a, const char* const file, int line, const char* msg = "") {
     if (e.size() == a.size()) {
