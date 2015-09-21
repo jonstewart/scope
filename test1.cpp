@@ -27,3 +27,7 @@ SCOPE_TEST(TestExpectMacro) {
 SCOPE_TEST_FAILS(knownBadTest) {
   SCOPE_ASSERT(false);
 }
+
+SCOPE_TEST_FAILS(aGoodBadTest) {
+  ;
+}

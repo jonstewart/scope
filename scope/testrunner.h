@@ -19,9 +19,14 @@ namespace scope {
   void RunFunction(scope::TestFunction test, const char* testname, bool shouldFail, MessageList& messages) {
     try {
       test();
+      if (shouldFail) {
+        std::string msg(testname);
+        msg.append(": marked for failure but did not throw scope::test_failure.");
+        messages.push_back(msg);
+      }
     }
     catch (const test_failure& fail) {
-      if (shouldFail) {
+      if (!shouldFail) {
         std::ostringstream buf;
         buf << fail.File << ":" << fail.Line << ": " << testname << ": " << fail.what();
         messages.push_back(buf.str());
