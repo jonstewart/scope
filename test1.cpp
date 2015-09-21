@@ -23,3 +23,7 @@ SCOPE_TEST(TestExpectMacro) {
   SCOPE_EXPECT(throw int(1), int);
   SCOPE_EXPECT(doNothing(), int);
 }
+
+SCOPE_TEST_FAILS(knownBadTest) {
+  SCOPE_ASSERT(false);
+}

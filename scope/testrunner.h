@@ -16,14 +16,16 @@
 
 namespace scope {
 
-  void RunFunction(scope::TestFunction test, const char* testname, MessageList& messages) {
+  void RunFunction(scope::TestFunction test, const char* testname, bool shouldFail, MessageList& messages) {
     try {
       test();
     }
     catch (const test_failure& fail) {
-      std::ostringstream buf;
-      buf << fail.File << ":" << fail.Line << ": " << testname << ": " << fail.what();
-      messages.push_back(buf.str());
+      if (shouldFail) {
+        std::ostringstream buf;
+        buf << fail.File << ":" << fail.Line << ": " << testname << ": " << fail.what();
+        messages.push_back(buf.str());
+      }
     }
     catch (const std::exception& except) {
       messages.push_back(std::string(testname) + ": " + except.what());

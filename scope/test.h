@@ -17,7 +17,7 @@ namespace scope {
   typedef std::list<std::string> MessageList; // need to replace this with an output iterator
   typedef std::function<void()> TestFunction;
 
-  void RunFunction(TestFunction test, const char* testname, MessageList& messages);
+  void RunFunction(TestFunction test, const char* testname, bool shouldFail, MessageList& messages);
   void CaughtBadExceptionType(const std::string& testname, const std::string& msg);
   
   class test_failure : public std::runtime_error {
@@ -146,13 +146,14 @@ namespace scope {
   class BoundTest : public Test {
   public:
     TestFunction Fn;
+    bool         ShouldFail;
 
-    BoundTest(const std::string& name, TestFunction fn):
-      Test(name), Fn(fn) {}
+    BoundTest(const std::string& name, TestFunction fn, bool shouldFail):
+      Test(name), Fn(fn), ShouldFail(shouldFail) {}
     
   private:
     virtual void _Run(MessageList& messages) const {
-      RunFunction(Fn, Name.c_str(), messages);
+      RunFunction(Fn, Name.c_str(), ShouldFail, messages);
     }
   };
 
@@ -312,12 +313,14 @@ namespace scope {
   class AutoRegisterSimple: public AutoRegister {
   public:
     TestFunction  Fn;
+    bool          ShouldFail;
 
-    AutoRegisterSimple(const char* name, TestFunction fn): AutoRegister(name), Fn(fn) {}
+    AutoRegisterSimple(const char* name, TestFunction fn, bool shouldFail):
+      AutoRegister(name), Fn(fn), ShouldFail(shouldFail) {}
     virtual ~AutoRegisterSimple() {}
 
     virtual Test* Construct() {
-      return new BoundTest(TestName, Fn);
+      return new BoundTest(TestName, Fn, ShouldFail);
     }
   };
 
@@ -379,15 +382,20 @@ namespace scope {
 // if "void testname(void) {}" results in a multiple-symbol linker error, then so will the namespacing.
 
 
-#define SCOPE_TEST_AUTO_REGISTRATION(testname) \
+#define SCOPE_TEST_AUTO_REGISTRATION(testname, shouldFail) \
   namespace scope { namespace user_defined { namespace { namespace SCOPE_CAT(testname, ns) { \
-    AutoRegisterSimple reg(#testname, testname); \
+    AutoRegisterSimple reg(#testname, testname, shouldFail); \
     CreateEdge SCOPE_CAT(testname, translation_unit)(GetTranslationUnitSet(), reg); \
   } } } }
 
 #define SCOPE_TEST(testname) \
   void testname(void);      \
-  SCOPE_TEST_AUTO_REGISTRATION(testname) \
+  SCOPE_TEST_AUTO_REGISTRATION(testname, false) \
+  void testname(void)
+
+#define SCOPE_TEST_FAILS(testname) \
+  void testname(void);            \
+  SCOPE_TEST_AUTO_REGISTRATION(testname, true) \
   void testname(void)
 
 #define SCOPE_SET_WITH_NAME(setidentifier, setname) \

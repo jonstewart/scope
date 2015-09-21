@@ -4,9 +4,9 @@ namespace {
   // Execute the callable and 
   // if it throws the test fails
   // else the test passes
-  // scope::Test traditionalFreeTest([]{
-  //   SCOPE_ASSERT_EQUAL(2, 1 + 1);
-  // });
+  scope::FreeTest traditionalFreeTest([]{
+    SCOPE_ASSERT_EQUAL(2, 1 + 1);
+  });
 
   // Execute the callable and use its return
   // value to denote success/failure.
