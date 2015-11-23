@@ -9,7 +9,6 @@
 #include <stdexcept>
 #include <sstream>
 #include <list>
-#include <vector>
 #include <functional>
 // #include <iostream>
 
@@ -38,19 +37,47 @@ namespace scope {
     }
   }
 
-  template<
-    typename ExceptionType,
-    typename ExpectedT,
-    typename ActualT
-  >
-  void eval_equal_impl(ExpectedT&& e, ActualT&& a, const char* const file, int line, const char* msg = "") {
+  template<typename ExceptionType, typename ExpectedT, typename ActualT>
+  auto eval_equal_impl(ExpectedT&& e, ActualT&& a, long, const char* const file, int line, const char* msg = "") -> decltype((e == a), void())
+  {
     // it'd be good to have a CTAssert on (ExpectedT==ActualT)
-    if (!((e) == (a))) {
+    if (!(e == a)) {
       std::ostringstream buf;
       if (*msg) {
         buf << msg << " ";
       }
       buf << "Expected: " << e << ", Actual: " << a;
+      throw ExceptionType(file, line, buf.str().c_str());
+    }
+  }
+
+  // eval_equal_impl for anything having std::begin and std::end overloads
+  template <typename ExceptionType, typename ExpSequenceT, typename ActSequenceT>
+  auto eval_equal_impl(ExpSequenceT&& e, ActSequenceT&& a, int, const char* const file, int line, const char* msg = "") -> decltype(std::begin(e), std::end(e), std::begin(a), std::end(a), void()) {
+    const auto abeg = std::begin(a);
+    const auto aend = std::end(a);
+    const auto ebeg = std::begin(e);
+    const auto eend = std::end(e);
+    const size_t elen = eend - ebeg;
+    const size_t alen = aend - abeg;
+
+    if (alen != elen) {
+      std::ostringstream buf;
+      if (*msg) {
+        buf << msg << " ";
+      }
+      buf << "Expected size: " << elen << ", Actual size: " << alen;
+      throw ExceptionType(file, line, buf.str().c_str());
+    }
+
+    const auto mis = std::mismatch(ebeg, eend, abeg);
+    if (mis.first != eend) {
+      std::ostringstream buf;
+      if (*msg) {
+        buf << msg << " ";
+      }
+      buf << "Expected[" << (mis.first - ebeg) << "]: " << *mis.first
+          << ", Actual[" << (mis.second - abeg) << "]: " << *mis.second;
       throw ExceptionType(file, line, buf.str().c_str());
     }
   }
@@ -77,6 +104,7 @@ namespace scope {
     eval_equal_impl<ExceptionType>(
       std::forward<const ExpectedT>(e),
       std::forward<const ActualT>(a),
+      0, // prefer sequence overload, because 0 is an int
       file, line, msg
     );
   }
@@ -94,33 +122,9 @@ namespace scope {
     eval_equal_impl<ExceptionType>(
       std::forward<const ExpectedT>(e),
       std::forward<const ActualT>(a),
+      0, // prefer sequence overload, because 0 is an int
       file, line, msg
     );
-  }
-
-  // eval_equal for std::vector
-  template<typename ExceptionType, typename ElementT>
-  void eval_equal(const std::vector<ElementT>& e, const std::vector<ElementT>& a, const char* const file, int line, const char* msg = "") {
-    if (e.size() == a.size()) {
-      for (size_t i = 0; i < e.size(); ++i) {
-        if (e[i] != a[i]) {
-          std::ostringstream buf;
-          if (*msg) {
-            buf << msg << " ";
-          }
-          buf << "Expected[" << i << "]: " << e[i] << ", Actual[" << i << "]: " << a[i];
-          throw ExceptionType(file, line, buf.str().c_str());
-        }
-      }
-    }
-    else {
-      std::ostringstream buf;
-      if (*msg) {
-        buf << msg << " ";
-      }
-      buf << "Expected size: " << e.size() << ", Actual size: " << a.size();
-      throw ExceptionType(file, line, buf.str().c_str());
-    }
   }
 
   struct TestCommon {
