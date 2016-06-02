@@ -31,3 +31,7 @@ SCOPE_TEST_FAILS(knownBadTest) {
 SCOPE_TEST_FAILS(aGoodBadTest) {
   ;
 }
+
+SCOPE_TEST_IGNORE(thisTestNeverRuns) {
+  *reinterpret_cast<int*>(1) = 25; // segfaults
+}

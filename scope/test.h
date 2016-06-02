@@ -402,6 +402,10 @@ namespace scope {
   SCOPE_TEST_AUTO_REGISTRATION(testname, true) \
   void testname(void)
 
+// no need for auto-register if the test is ignored
+#define SCOPE_TEST_IGNORE(testname) \
+  void testname(void)
+
 #define SCOPE_SET_WITH_NAME(setidentifier, setname) \
   namespace scope { namespace user_defined { namespace did_you_forget_to_define_your_set { \
     AutoRegisterSet setidentifier(setname); \
