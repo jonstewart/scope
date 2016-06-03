@@ -1,5 +1,5 @@
 /*
-  © 2009, Jon Stewart
+  © 2009–2016, Jon Stewart
   Released under the terms of the Boost license (http://www.boost.org/LICENSE_1_0.txt). See License.txt for details.
 */
 
@@ -8,8 +8,8 @@
 #include <cassert>
 #include <csignal>
 #include <iostream>
-#include <boost/graph/adjacency_list.hpp>
-#include <boost/graph/depth_first_search.hpp>
+#include <memory>
+#include <map>
 
 #include "test.h"
 
@@ -44,99 +44,39 @@ namespace scope {
     std::cerr << name << ": " << msg << "; please at least inherit from std::exception" << std::endl;
   }
 
-  typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::directedS, boost::property<boost::vertex_color_t, boost::default_color_type>> TestGraph;
-  typedef boost::graph_traits<TestGraph>::vertex_descriptor Vertex;
-  typedef boost::graph_traits<TestGraph>::vertex_iterator VertexIter;
-  typedef boost::property_map<TestGraph, boost::vertex_color_t>::type Color;
-  typedef boost::property_map<TestGraph, boost::vertex_index_t>::type IndexMap;
-  typedef boost::shared_ptr<Test> TestPtr;
-  typedef std::vector<TestPtr> TestMap;
-
-  class TestVisitor : public boost::default_dfs_visitor {
-  public:
-    TestVisitor(TestRunner& runner, TestMap& tests, MessageList& messages): Runner(runner), Tests(tests), Messages(messages) {}
-
-    template <typename Vertex, typename Graph> void discover_vertex(Vertex v, const Graph& g) const {
-      using namespace boost;
-      //std::cerr << "Running " << Tests[get(vertex_index, g)[v]]->Name << "\n";
-      TestPtr t(Tests[get(vertex_index, g)[v]]);
-      Runner.runTest(t.get(), Messages);
-    }
-
-  private:
-    TestRunner& Runner;
-    TestMap& Tests;
-    MessageList& Messages;
-  };
-
   namespace {
     class TestRunnerImpl : public TestRunner {
     public:
       TestRunnerImpl():
-        FirstTest(nullptr), FirstEdge(nullptr),
         NumTests(0), NumRun(0), Debug(false) {}
 
-      virtual void runTest(const Test* const test, MessageList& messages) {
-        if (!dynamic_cast<const SetTest*>(test) && (NameFilter.empty() || NameFilter == test->Name)) {
-          LastTest = test->Name;
+      virtual void runTest(const Test& test, const std::string& nameFilter, MessageList& messages) {
+        if (nameFilter.empty() || nameFilter == test.Name) {
+          lastTest() = test.Name;
           if (Debug) {
-            std::cerr << "Running " << test->Name << std::endl;
+            std::cerr << "Running " << test.Name << std::endl;
           }
           ++NumRun;
-          test->Run(messages);
+          test.Run(messages);
           if (Debug) {
-            std::cerr << "Done with " << test->Name << std::endl;
+            std::cerr << "Done with " << test.Name << std::endl;
           }
         }
       }
 
-      virtual void run(MessageList& messages, const std::string& nameFilter) {
-        using namespace boost;
-        NameFilter = nameFilter;
-        for (AutoRegister* cur = FirstTest; cur; cur = cur->Next) {
-          Add(TestPtr(cur->Construct()));
+      virtual void run(const std::string& nameFilter, MessageList& messages) {
+        auto& r(root());
+        for (auto curlist(r.FirstChild); curlist; curlist = curlist->Next) {
+          for (auto cur(curlist->FirstChild); cur; cur = cur->Next) {
+            ++NumTests;
+          }
         }
-        for (CreateEdge* cur = FirstEdge; cur; cur = cur->Next) {
-          CreateLink(cur->From, cur->To);
+        for (auto curlist(r.FirstChild); curlist; curlist = curlist->Next) {
+          for (auto cur(curlist->FirstChild); cur; cur = cur->Next) {
+            std::unique_ptr<Test> test(cur->Construct());
+            runTest(*test, nameFilter, messages);
+          }
         }
-        TestVisitor vis(*this, Tests, messages);
-        depth_first_search(Graph, vis, get(vertex_color, Graph));
-        /*  for (std::pair<VertexIter, VertexIter> vipair(vertices(Graph)); vipair.first != vipair.second; ++vipair.first) {
-        Tests[get(vertex_index, Graph)[*vipair.first]]->Run(messages);
-        }*/
-      }
-
-      virtual size_t Add(TestPtr test) {
-        using namespace boost;
-        Vertex v(add_vertex(Graph));
-        size_t ret = get(vertex_index, Graph)[v];
-        assert(ret == Tests.size());
-        Tests.push_back(test);
-        if (!dynamic_pointer_cast<SetTest>(test)) {
-          ++NumTests;
-        }
-        return ret;
-      }
-
-      virtual void CreateLink(const AutoRegister& from, const AutoRegister& to) {
-        FastCreateLink(from, to); // we should check for cycles. maybe?
-      }
-
-      virtual void FastCreateLink(const AutoRegister& from, const AutoRegister& to) {
-        boost::add_edge(from.Index, to.Index, Graph);
-      }
-
-      virtual void addTest(AutoRegister& test) {
-        if (!FirstTest) {
-          FirstTest = &test;
-        }
-        else {
-          FirstTest->insert(test);
-        }
-      }
-
-      virtual void addLink(CreateEdge&) {
-        
       }
 
       virtual unsigned int numTests() const {
@@ -151,30 +91,25 @@ namespace scope {
         Debug = val;
       }
 
-      virtual std::string lastTest() const {
-        return LastTest;
-      }
-
     private:
-      TestGraph Graph;
-      TestMap   Tests;
-      AutoRegister* FirstTest;
-      CreateEdge*   FirstEdge;
-      std::string   NameFilter,
-                    LastTest;
       unsigned int  NumTests,
                     NumRun;
       bool          Debug;
     };
   }
 
-  TestRunner& TestRunner::Get(void) {
-    static TestRunnerImpl singleton;
-    return singleton;
+  Node<AutoRegister>& TestRunner::root(void) {
+    static Node<AutoRegister> root;
+    return root;
+  }
+
+  std::string& TestRunner::lastTest(void) {
+    static std::string last;
+    return last;
   }
 
   void handleTerminate() {
-    std::cerr << "std::terminate called, last test was " << TestRunner::Get().lastTest() << ". Aborting." << std::endl;
+    std::cerr << "std::terminate called, last test was " << TestRunner::lastTest() << ". Aborting." << std::endl;
     std::abort();
   }
 
@@ -190,7 +125,7 @@ namespace scope {
   void handleSignal(int signum) {
     auto friendlySig = signalMap()[signum];
     std::cerr << "Received signal " << signum << ", " << friendlySig
-      << ". Last test was " << TestRunner::Get().lastTest() << ". Aborting." << std::endl;
+      << ". Last test was " << TestRunner::lastTest() << ". Aborting." << std::endl;
     std::abort();
   }
 
@@ -204,7 +139,7 @@ namespace scope {
 
   bool DefaultRun(std::ostream& out, int argc, char** argv) {
     MessageList msgs;
-    TestRunner& runner(TestRunner::Get());
+    TestRunnerImpl runner;
     std::string debug("--debug");
     if ((argc == 3 && debug == argv[2]) || (argc == 4 && debug == argv[3])) {
       runner.setDebug(true);
@@ -214,7 +149,7 @@ namespace scope {
 
     setHandlers(handleSignal);
     std::set_terminate(&handleTerminate);
-    runner.run(msgs, nameFilter);
+    runner.run(nameFilter, msgs);
     std::set_terminate(0);
     setHandlers(SIG_DFL);
 
@@ -222,7 +157,7 @@ namespace scope {
       out << m << '\n';
     }
 
-    if (msgs.begin() == msgs.end()) {
+    if (msgs.empty()) {
       out << "OK (" << runner.numRun() << " tests)" << std::endl;
       return true;
     }

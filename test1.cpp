@@ -9,8 +9,6 @@ SCOPE_TEST(simpleTest) {
   SCOPE_ASSERT(true);
 }
 
-SCOPE_TEST_BELONGS_TO(simpleTest, coolio);
-
 SCOPE_TEST(failTest) {
   SCOPE_ASSERT(false); // ha-ha!
 }

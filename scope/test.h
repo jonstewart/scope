@@ -160,14 +160,6 @@ namespace scope {
       RunFunction(Fn, Name.c_str(), ShouldFail, messages);
     }
   };
-
-  class SetTest : public Test {
-  public:
-    SetTest(const std::string& name): Test(name) {}
-
-  private:
-    virtual void _Run(MessageList&) const {}
-  };
   
   template<class FixtureType> FixtureType* DefaultFixtureConstruct() {
     return new FixtureType;
@@ -246,81 +238,78 @@ namespace scope {
     }
   };
 
+  template<class T> class Node;
   class AutoRegister;
-  class CreateEdge;
 
   class TestRunner {
-    friend class CreateEdge;
   public:
-    static TestRunner& Get(void);
+    static Node<AutoRegister>& root();
+    static std::string& lastTest();
 
-    virtual void runTest(const Test* const test, MessageList& messages) = 0;
-    virtual void run(MessageList& messages, const std::string& nameFilter = "") = 0;
+    virtual ~TestRunner() {}
 
-//    virtual size_t Add(TestPtr test) = 0;
+    virtual void runTest(const Test& test, const std::string& nameFilter, MessageList& messages) = 0;
+    virtual void run(const std::string& nameFilter, MessageList& messages) = 0;
 
-    virtual void addTest(AutoRegister& test) = 0;
-    virtual void addLink(CreateEdge& link) = 0;
-    virtual void CreateLink(const AutoRegister& from, const AutoRegister& to) = 0;
     virtual unsigned int numTests() const = 0;
     virtual unsigned int numRun() const = 0;
     virtual void setDebug(bool) = 0;
-    virtual std::string lastTest() const = 0;
-
-  protected:
-    TestRunner() {}
-    virtual ~TestRunner() {}
-
-    virtual void FastCreateLink(const AutoRegister& from, const AutoRegister& to) = 0;
-
-  private:
-    TestRunner(const TestRunner&);
   };
 
   template<class T> class Node {
   public:
+    Node(): Next(nullptr), FirstChild(nullptr) {}
+
     void insert(T& node) {
-      node.Next = Next;
-      Next = &node;
+      node.Next = FirstChild;
+      FirstChild = &node;
     }
 
     T*  Next;
+    T*  FirstChild;
   };
+
+  namespace {
+    AutoRegister& GetTranslationUnitSet();
+  }
 
   class AutoRegister: public Node<AutoRegister> {
   public:
-    size_t          Index;
     const char*     TestName;
 
-    AutoRegister(const char* name):
-      Index(0), TestName(name)
-    {
-      TestRunner::Get().addTest(*this);
-    }
+    AutoRegister(const char* name): TestName(name) {}
 
     virtual ~AutoRegister() {}
 
-    virtual Test* Construct() = 0;
+    virtual Test* Construct() { return nullptr; };
+  };
+
+  class AutoRegisterTest: public AutoRegister {
+  public:
+    AutoRegisterTest(const char* name):
+      AutoRegister(name)
+    {
+      GetTranslationUnitSet().insert(*this);
+    }
   };
 
   class AutoRegisterSet: public AutoRegister {
   public:
-
-    AutoRegisterSet(const char* name): AutoRegister(name) {}
-    virtual ~AutoRegisterSet() {}
-
-    virtual Test* Construct() {
-      return new SetTest(TestName);
+    AutoRegisterSet(const char* name):
+      AutoRegister(name)
+    {
+      TestRunner::root().insert(*this);
     }
   };
 
-  class AutoRegisterSimple: public AutoRegister {
+  class AutoRegisterSimple: public AutoRegisterTest {
   public:
     TestFunction  Fn;
     bool          ShouldFail;
 
     AutoRegisterSimple(const char* name, TestFunction fn, bool shouldFail):
-      AutoRegister(name), Fn(fn), ShouldFail(shouldFail) {}
+      AutoRegisterTest(name), Fn(fn), ShouldFail(shouldFail) {}
+
     virtual ~AutoRegisterSimple() {}
 
     virtual Test* Construct() {
@@ -342,18 +331,6 @@ namespace scope {
     virtual Test* Construct() {
       return new FixtureTest<FixtureT>(TestName, Fn, Ctor);
     }
-  };
-
-  class CreateEdge: public Node<CreateEdge> {
-  public:
-    CreateEdge(const AutoRegister& from, const AutoRegister& to):
-      From(from), To(to)
-    {
-      TestRunner::Get().addLink(*this);
-    }
-
-    const AutoRegister  &From,
-                        &To;
   };
 
   class FreeTest {
@@ -389,7 +366,6 @@ namespace scope {
 #define SCOPE_TEST_AUTO_REGISTRATION(testname, shouldFail) \
   namespace scope { namespace user_defined { namespace { namespace SCOPE_CAT(testname, ns) { \
     AutoRegisterSimple reg(#testname, testname, shouldFail); \
-    CreateEdge SCOPE_CAT(testname, translation_unit)(GetTranslationUnitSet(), reg); \
   } } } }
 
 #define SCOPE_TEST(testname) \
@@ -402,31 +378,13 @@ namespace scope {
   SCOPE_TEST_AUTO_REGISTRATION(testname, true) \
   void testname(void)
 
-// no need for auto-register if the test is ignored
+// no need for auto-register if the test is i
 #define SCOPE_TEST_IGNORE(testname) \
   void testname(void)
-
-#define SCOPE_SET_WITH_NAME(setidentifier, setname) \
-  namespace scope { namespace user_defined { namespace did_you_forget_to_define_your_set { \
-    AutoRegisterSet setidentifier(setname); \
-    CreateEdge SCOPE_CAT(setidentifier, translation_unit)(GetTranslationUnitSet(), setidentifier); \
-  } } }
-
-#define SCOPE_SET(setname) \
-  SCOPE_SET_WITH_NAME(setname, #setname)
-
-#define SCOPE_TEST_BELONGS_TO(testname, setname) \
-  namespace scope { namespace user_defined { namespace did_you_forget_to_define_your_set { \
-    extern AutoRegisterSet setname; } \
-  namespace { namespace SCOPE_CAT(testname, ns) { \
-    using namespace scope::user_defined::did_you_forget_to_define_your_set; \
-    CreateEdge SCOPE_CAT(setname, edgecreator)(setname, reg); \
-  } } } }
 
 #define SCOPE_FIXTURE_AUTO_REGISTRATION(fixtureType, testfunction, ctorfunction) \
   namespace scope { namespace user_defined { namespace { namespace SCOPE_CAT(testfunction, ns) { \
     AutoRegisterFixture<fixtureType> reg(#testfunction, testfunction, ctorfunction); \
-    CreateEdge SCOPE_CAT(testfunction, translation_unit)(GetTranslationUnitSet(), reg); \
   } } } }
 
 #define SCOPE_FIXTURE(testname, fixtureType) \
