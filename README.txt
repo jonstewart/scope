@@ -20,17 +20,13 @@ teardown() functions.
 Scope's autoregistration system does use a bunch of static variables, as well as
 a static singleton to collect them, but it avoids many of the pitfalls inherit
 with singletons and static allocation in C++. In particular, it does not depend
-on the order of construction (or guarantees it using a Meyers singleton) and it
+on the order of construction (or guarantees it using a Meyers singleton) and it
 does not use heap-allocated memory (i.e. no calls to new or malloc() before
 main()) in accordance with the standard. Among other things, this makes leak-
 detectors much easier to use, since Scope shouldn't generate any noise.
 
-Tests are organized into sets, but sets can be relational, not just 
-hierarchical--Scope uses a graph to represent the connections between sets and
-tests. One set per source file is automatically created, and each test is put
-into its corresponding source set automatically, giving you a hierarchical 
-structure out of the box. However, it's possible to specify that a test should
-belong to other sets.
+Tests are organized into a tree organized by containing source file, giving you
+ a hierarchical structure out of the box.=
 
 Scope needs more work with respect to command-line features, friendly output,
 and performance profiling.
