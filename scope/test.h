@@ -134,10 +134,10 @@ namespace scope {
     std::string Name;
   };
 
-  class Test : public TestCommon {
+  class TestCase : public TestCommon {
   public:
-    Test(const std::string& name): TestCommon(name) {}
-    virtual ~Test() {}
+    TestCase(const std::string& name): TestCommon(name) {}
+    virtual ~TestCase() {}
 
     void Run(MessageList& messages) const {
       _Run(messages);
@@ -147,13 +147,13 @@ namespace scope {
     virtual void _Run(MessageList& messages) const = 0;
   };
 
-  class BoundTest : public Test {
+  class BoundTest : public TestCase {
   public:
     TestFunction Fn;
     bool         ShouldFail;
 
     BoundTest(const std::string& name, TestFunction fn, bool shouldFail):
-      Test(name), Fn(fn), ShouldFail(shouldFail) {}
+      TestCase(name), Fn(fn), ShouldFail(shouldFail) {}
     
   private:
     virtual void _Run(MessageList& messages) const {
@@ -165,7 +165,7 @@ namespace scope {
     return new FixtureType;
   }
   
-  template<class FixtureT> class FixtureTest: public Test {
+  template<class FixtureT> class FixtureTest: public TestCase {
   public:
     typedef void (*FixtureTestFunction)(FixtureT&);
     typedef FixtureT* (*FixtureCtorFunction)(void);
@@ -173,7 +173,7 @@ namespace scope {
     FixtureTestFunction Fn;
     FixtureCtorFunction Ctor;
 
-    FixtureTest(const std::string& name, FixtureTestFunction fn, FixtureCtorFunction ctor): Test(name), Fn(fn), Ctor(ctor) {}
+    FixtureTest(const std::string& name, FixtureTestFunction fn, FixtureCtorFunction ctor): TestCase(name), Fn(fn), Ctor(ctor) {}
 
   private:
     virtual void _Run(MessageList& messages) const {
@@ -248,7 +248,7 @@ namespace scope {
 
     virtual ~TestRunner() {}
 
-    virtual void runTest(const Test& test, const std::string& nameFilter, MessageList& messages) = 0;
+    virtual void runTest(const TestCase& test, const std::string& nameFilter, MessageList& messages) = 0;
     virtual void run(const std::string& nameFilter, MessageList& messages) = 0;
 
     virtual unsigned int numTests() const = 0;
@@ -281,7 +281,7 @@ namespace scope {
 
     virtual ~AutoRegister() {}
 
-    virtual Test* Construct() { return nullptr; };
+    virtual TestCase* Construct() { return nullptr; };
   };
 
   class AutoRegisterTest: public AutoRegister {
@@ -302,17 +302,17 @@ namespace scope {
     }
   };
 
-  class AutoRegisterSimple: public AutoRegisterTest {
+  class Test: public AutoRegisterTest {
   public:
     TestFunction  Fn;
     bool          ShouldFail;
 
-    AutoRegisterSimple(const char* name, TestFunction fn, bool shouldFail):
+    Test(const char* name, TestFunction fn, bool shouldFail = false):
       AutoRegisterTest(name), Fn(fn), ShouldFail(shouldFail) {}
 
-    virtual ~AutoRegisterSimple() {}
+    virtual ~Test() {}
 
-    virtual Test* Construct() {
+    virtual TestCase* Construct() {
       return new BoundTest(TestName, Fn, ShouldFail);
     }
   };
@@ -328,15 +328,8 @@ namespace scope {
     AutoRegisterFixture(const char* name, FixtureTestFunction fn, FixtureCtorFunction ctor): AutoRegister(name), Fn(fn), Ctor(ctor) {}
     virtual ~AutoRegisterFixture() {}
 
-    virtual Test* Construct() {
+    virtual TestCase* Construct() {
       return new FixtureTest<FixtureT>(TestName, Fn, Ctor);
-    }
-  };
-
-  class FreeTest {
-  public:
-    FreeTest(const std::function<void(void)>&) {
-
     }
   };
 
@@ -365,7 +358,7 @@ namespace scope {
 
 #define SCOPE_TEST_AUTO_REGISTRATION(testname, shouldFail) \
   namespace scope { namespace user_defined { namespace { namespace SCOPE_CAT(testname, ns) { \
-    AutoRegisterSimple reg(#testname, testname, shouldFail); \
+    Test reg(#testname, testname, shouldFail); \
   } } } }
 
 #define SCOPE_TEST(testname) \

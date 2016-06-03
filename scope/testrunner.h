@@ -50,7 +50,7 @@ namespace scope {
       TestRunnerImpl():
         NumTests(0), NumRun(0), Debug(false) {}
 
-      virtual void runTest(const Test& test, const std::string& nameFilter, MessageList& messages) {
+      virtual void runTest(const TestCase& test, const std::string& nameFilter, MessageList& messages) {
         if (nameFilter.empty() || nameFilter == test.Name) {
           lastTest() = test.Name;
           if (Debug) {
@@ -73,7 +73,7 @@ namespace scope {
         }
         for (auto curlist(r.FirstChild); curlist; curlist = curlist->Next) {
           for (auto cur(curlist->FirstChild); cur; cur = cur->Next) {
-            std::unique_ptr<Test> test(cur->Construct());
+            std::unique_ptr<TestCase> test(cur->Construct());
             runTest(*test, nameFilter, messages);
           }
         }

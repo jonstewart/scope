@@ -1,12 +1,18 @@
 #include "scope/test.h"
 
 namespace {
+  using namespace scope;
+
+  // who needs auto-registration macros?
+
   // Execute the callable and 
   // if it throws the test fails
   // else the test passes
-  scope::FreeTest traditionalFreeTest([]{
+  // totally works with a lambda
+  Test traditionalFreeTest("traditionalFreeTest", []{
     SCOPE_ASSERT_EQUAL(2, 1 + 1);
   });
+
 
   // Execute the callable and use its return
   // value to denote success/failure.
