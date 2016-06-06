@@ -11,6 +11,9 @@
 #include <memory>
 #include <map>
 
+#include "tclap/CmdLine.h"
+
+
 #include "test.h"
 
 namespace scope {
@@ -138,18 +141,28 @@ namespace scope {
   }
 
   bool DefaultRun(std::ostream& out, int argc, char** argv) {
+    TCLAP::CmdLine parser("Scope test", ' ', "version number?");
+
+    TCLAP::ValueArg<std::string> filter("f", "filter", "Test to run", false, "", "string", parser);
+
+    TCLAP::SwitchArg verbose("v", "verbose", "Print debugging info", parser);
+
+    try {
+      parser.parse(argc, argv);
+    }
+    catch (TCLAP::ArgException& e) {
+      std::cerr << "Error: " << e.error() << " for argument " << e.argId() << std::endl;
+      return false;
+    }
     MessageList msgs;
     TestRunnerImpl runner;
-    std::string debug("--debug");
-    if ((argc == 3 && debug == argv[2]) || (argc == 4 && debug == argv[3])) {
+    if (verbose.getValue()) {
       runner.setDebug(true);
       out << "Running in debug mode" << std::endl;
     }
-    std::string nameFilter(argc > 2 && debug != argv[2] ? argv[2]: "");
-
     setHandlers(handleSignal);
     std::set_terminate(&handleTerminate);
-    runner.run(nameFilter, msgs);
+    runner.run(filter.getValue(), msgs);
     std::set_terminate(0);
     setHandlers(SIG_DFL);
 
