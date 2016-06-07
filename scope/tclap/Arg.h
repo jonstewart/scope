@@ -25,12 +25,6 @@
 #ifndef TCLAP_ARGUMENT_H
 #define TCLAP_ARGUMENT_H
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#else
-#define HAVE_SSTREAM
-#endif
-
 #include <string>
 #include <vector>
 #include <list>
@@ -38,15 +32,7 @@
 #include <iomanip>
 #include <cstdio>
 
-#if defined(HAVE_SSTREAM)
 #include <sstream>
-typedef std::istringstream istringstream;
-#elif defined(HAVE_STRSTREAM)
-#include <strstream>
-typedef std::istrstream istringstream;
-#else
-#error "Need a stringstream (sstream or strstream) to compile!"
-#endif
 
 #include "ArgException.h"
 #include "Visitor.h"

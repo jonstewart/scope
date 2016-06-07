@@ -27,19 +27,7 @@
 #include <vector>
 #include "Constraint.h"
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#else
-#define HAVE_SSTREAM
-#endif
-
-#if defined(HAVE_SSTREAM)
 #include <sstream>
-#elif defined(HAVE_STRSTREAM)
-#include <strstream>
-#else
-#error "Need a stringstream (sstream or strstream) to compile!"
-#endif
 
 namespace TCLAP {
 
@@ -103,13 +91,7 @@ ValuesConstraint<T>::ValuesConstraint(std::vector<T>& allowed)
     for ( unsigned int i = 0; i < _allowed.size(); i++ )
     {
 
-#if defined(HAVE_SSTREAM)
         std::ostringstream os;
-#elif defined(HAVE_STRSTREAM)
-        std::ostrstream os;
-#else
-#error "Need a stringstream (sstream or strstream) to compile!"
-#endif
 
         os << _allowed[i];
 
