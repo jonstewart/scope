@@ -91,10 +91,8 @@ namespace scope {
         buf << *mis.second;
       }
 
-      if (mis.first == eend || mis.second == aend) {
-        buf << ", Expected size: " << std::distance(ebeg, eend)
-            << ", Actual size: " << std::distance(abeg, aend);
-      }
+      buf << ", Expected size: " << std::distance(ebeg, eend)
+          << ", Actual size: " << std::distance(abeg, aend);
 
       throw ExceptionType(file, line, buf.str().c_str());
     }
