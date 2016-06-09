@@ -62,28 +62,39 @@ namespace scope {
     const auto aend = std::end(a);
     const auto ebeg = std::begin(e);
     const auto eend = std::end(e);
-    const size_t elen = std::distance(ebeg, eend);
-    const size_t alen = std::distance(abeg, aend);
-
-    if (alen != elen) {
-      std::ostringstream buf;
-      if (*msg) {
-        buf << msg << " ";
-      }
-      buf << "Expected size: " << elen << ", Actual size: " << alen;
-      throw ExceptionType(file, line, buf.str().c_str());
-    }
 
     const auto mis = std::mismatch(ebeg, eend, abeg);
-    if (mis.first != eend) {
+
+    if (mis.first != eend || mis.second != aend) {
+      const size_t elen = std::distance(ebeg, eend);
+      const size_t alen = std::distance(abeg, aend);
+
       std::ostringstream buf;
       if (*msg) {
         buf << msg << " ";
       }
       buf << "Expected["
-          << std::distance(ebeg, mis.first) << "]: " << *mis.first
-          << ", Actual["
-          << std::distance(abeg, mis.second) << "]: " << *mis.second;
+          << std::distance(ebeg, mis.first) << "]: ";
+      if (mis.first == eend) {
+        buf << "past end";
+      }
+      else {
+        buf << *mis.first;
+      }
+
+      buf << ", Actual["
+          << std::distance(abeg, mis.second) << "]: ";
+      if (mis.second == aend) {
+        buf << "past end";
+      }
+      else {
+        buf << *mis.second;
+      }
+
+      if (alen != elen) {
+        buf << ", Expected size: " << elen << ", Actual size: " << alen;
+      }
+
       throw ExceptionType(file, line, buf.str().c_str());
     }
   }
