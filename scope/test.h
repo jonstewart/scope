@@ -82,7 +82,7 @@ namespace scope {
         buf << *mis.first;
       }
 
-      buf << ", Actual: "
+      buf << ", Actual: ";
 
       if (mis.second == aend) {
         buf << "*past end*";
