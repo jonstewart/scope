@@ -66,33 +66,34 @@ namespace scope {
     const auto mis = std::mismatch(ebeg, eend, abeg);
 
     if (mis.first != eend || mis.second != aend) {
-      const size_t elen = std::distance(ebeg, eend);
-      const size_t alen = std::distance(abeg, aend);
-
       std::ostringstream buf;
       if (*msg) {
         buf << msg << " ";
       }
-      buf << "Expected["
-          << std::distance(ebeg, mis.first) << "]: ";
+
+      buf << "Mismatch at index " 
+          << std::distance(ebeg, mis.first)
+          << ". Expected: ";
+
       if (mis.first == eend) {
-        buf << "past end";
+        buf << "*past end*";
       }
       else {
         buf << *mis.first;
       }
 
-      buf << ", Actual["
-          << std::distance(abeg, mis.second) << "]: ";
+      buf << ", Actual: "
+
       if (mis.second == aend) {
-        buf << "past end";
+        buf << "*past end*";
       }
       else {
         buf << *mis.second;
       }
 
-      if (alen != elen) {
-        buf << ", Expected size: " << elen << ", Actual size: " << alen;
+      if (mis.first == eend || mis.second == aend) {
+        buf << ", Expected size: " << std::distance(ebeg, eend)
+            << ", Actual size: " << std::distance(abeg, aend);
       }
 
       throw ExceptionType(file, line, buf.str().c_str());
