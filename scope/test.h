@@ -52,32 +52,48 @@ namespace scope {
   }
 
   // eval_equal_impl for anything having std::begin and std::end overloads
-  template <typename ExceptionType, typename ExpSequenceT, typename ActSequenceT>
+  template <
+    typename ExceptionType,
+    typename ExpSequenceT,
+    typename ActSequenceT
+  >
   auto eval_equal_impl(ExpSequenceT&& e, ActSequenceT&& a, int, const char* const file, int line, const char* msg = "") -> decltype(std::begin(e), std::end(e), std::begin(a), std::end(a), void()) {
     const auto abeg = std::begin(a);
     const auto aend = std::end(a);
     const auto ebeg = std::begin(e);
     const auto eend = std::end(e);
-    const size_t elen = eend - ebeg;
-    const size_t alen = aend - abeg;
-
-    if (alen != elen) {
-      std::ostringstream buf;
-      if (*msg) {
-        buf << msg << " ";
-      }
-      buf << "Expected size: " << elen << ", Actual size: " << alen;
-      throw ExceptionType(file, line, buf.str().c_str());
-    }
 
     const auto mis = std::mismatch(ebeg, eend, abeg);
-    if (mis.first != eend) {
+
+    if (mis.first != eend || mis.second != aend) {
       std::ostringstream buf;
       if (*msg) {
         buf << msg << " ";
       }
-      buf << "Expected[" << (mis.first - ebeg) << "]: " << *mis.first
-          << ", Actual[" << (mis.second - abeg) << "]: " << *mis.second;
+
+      buf << "Mismatch at index " 
+          << std::distance(ebeg, mis.first)
+          << ". Expected: ";
+
+      if (mis.first == eend) {
+        buf << "*past end*";
+      }
+      else {
+        buf << *mis.first;
+      }
+
+      buf << ", Actual: "
+
+      if (mis.second == aend) {
+        buf << "*past end*";
+      }
+      else {
+        buf << *mis.second;
+      }
+
+      buf << ", Expected size: " << std::distance(ebeg, eend)
+          << ", Actual size: " << std::distance(abeg, aend);
+
       throw ExceptionType(file, line, buf.str().c_str());
     }
   }
@@ -120,8 +136,8 @@ namespace scope {
   >
   void eval_equal(const ExpectedT& e, const ActualT& a, const char* const file, int line, const char* msg = "") {
     eval_equal_impl<ExceptionType>(
-      std::forward<const ExpectedT>(e),
-      std::forward<const ActualT>(a),
+      std::forward<const ExpectedT&>(e),
+      std::forward<const ActualT&>(a),
       0, // prefer sequence overload, because 0 is an int
       file, line, msg
     );
