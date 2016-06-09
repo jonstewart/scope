@@ -10,6 +10,7 @@
 #include <iostream>
 #include <memory>
 #include <map>
+#include <regex>
 
 #include "tclap/CmdLine.h"
 
@@ -53,8 +54,8 @@ namespace scope {
       TestRunnerImpl():
         NumTests(0), NumRun(0), Debug(false) {}
 
-      virtual void runTest(const TestCase& test, const std::string& nameFilter, MessageList& messages) {
-        if (nameFilter.empty() || nameFilter == test.Name) {
+      virtual void runTest(const TestCase& test, MessageList& messages) {
+        if (!NameFilter || std::regex_match(test.Name, *NameFilter)) {
           lastTest() = test.Name;
           if (Debug) {
             std::cerr << "Running " << test.Name << std::endl;
@@ -67,7 +68,7 @@ namespace scope {
         }
       }
 
-      virtual void run(const std::string& nameFilter, MessageList& messages) {
+      virtual void run(MessageList& messages) {
         auto& r(root());
         for (auto curlist(r.FirstChild); curlist; curlist = curlist->Next) {
           for (auto cur(curlist->FirstChild); cur; cur = cur->Next) {
@@ -77,7 +78,7 @@ namespace scope {
         for (auto curlist(r.FirstChild); curlist; curlist = curlist->Next) {
           for (auto cur(curlist->FirstChild); cur; cur = cur->Next) {
             std::unique_ptr<TestCase> test(cur->Construct());
-            runTest(*test, nameFilter, messages);
+            runTest(*test, messages);
           }
         }
       }
@@ -94,7 +95,13 @@ namespace scope {
         Debug = val;
       }
 
+      virtual void setFilter(const std::shared_ptr<std::regex>& filter) {
+        NameFilter = filter;
+      }
+
     private:
+      std::shared_ptr<std::regex> NameFilter;
+
       unsigned int  NumTests,
                     NumRun;
       bool          Debug;
@@ -143,7 +150,7 @@ namespace scope {
   bool DefaultRun(std::ostream& out, int argc, char** argv) {
     TCLAP::CmdLine parser("Scope test", ' ', "version number?");
 
-    TCLAP::ValueArg<std::string> filter("f", "filter", "Test to run", false, "", "string", parser);
+    TCLAP::ValueArg<std::string> filter("f", "filter", "Only run tests whose names match provided regexp", false, "", "regexp", parser);
 
     TCLAP::SwitchArg verbose("v", "verbose", "Print debugging info", parser);
 
@@ -156,13 +163,23 @@ namespace scope {
     }
     MessageList msgs;
     TestRunnerImpl runner;
+    std::string f(filter.getValue());
+    if (!f.empty()) {
+      try {
+        runner.setFilter(std::make_shared<std::regex>(f));
+      }
+      catch (std::regex_error& e) {
+        std::cerr << "Error with filter regexp '" << f << "': " << e.what() << std::endl;
+        return false;
+      }
+    }
     if (verbose.getValue()) {
       runner.setDebug(true);
       out << "Running in debug mode" << std::endl;
     }
     setHandlers(handleSignal);
     std::set_terminate(&handleTerminate);
-    runner.run(filter.getValue(), msgs);
+    runner.run(msgs);
     std::set_terminate(0);
     setHandlers(SIG_DFL);
 

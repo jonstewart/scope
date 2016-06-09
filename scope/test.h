@@ -10,7 +10,10 @@
 #include <sstream>
 #include <list>
 #include <functional>
+#include <regex>
 // #include <iostream>
+
+
 
 namespace scope {
   typedef std::list<std::string> MessageList; // need to replace this with an output iterator
@@ -264,12 +267,13 @@ namespace scope {
 
     virtual ~TestRunner() {}
 
-    virtual void runTest(const TestCase& test, const std::string& nameFilter, MessageList& messages) = 0;
-    virtual void run(const std::string& nameFilter, MessageList& messages) = 0;
+    virtual void runTest(const TestCase& test, MessageList& messages) = 0;
+    virtual void run(MessageList& messages) = 0;
 
     virtual unsigned int numTests() const = 0;
     virtual unsigned int numRun() const = 0;
     virtual void setDebug(bool) = 0;
+    virtual void setFilter(const std::shared_ptr<std::regex>& filter) = 0;
   };
 
   template<class T> class Node {
