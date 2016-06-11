@@ -119,7 +119,7 @@ namespace scope {
       pass_by_value<ExpectedT, ActualT>::value
     >::type
   >
-  void eval_equal(const ExpectedT e, const ActualT a, const char* const file, int line, const char* msg = "") {
+  void eval_equal(const char* const file, int line, const ExpectedT e, const ActualT a, const char* msg = "") {
     eval_equal_impl<ExceptionType>(
       std::forward<const ExpectedT>(e),
       std::forward<const ActualT>(a),
@@ -137,7 +137,7 @@ namespace scope {
       !pass_by_value<ExpectedT, ActualT>::value
     >::type
   >
-  void eval_equal(const ExpectedT& e, const ActualT& a, const char* const file, int line, const char* msg = "") {
+  void eval_equal(const char* const file, int line, const ExpectedT& e, const ActualT& a, const char* msg = "") {
     eval_equal_impl<ExceptionType>(
       std::forward<const ExpectedT&>(e),
       std::forward<const ActualT&>(a),
@@ -420,10 +420,10 @@ namespace scope {
   SCOPE_ASSERT_THROW(condition, scope::test_failure)
   
 #define SCOPE_ASSERT_EQUAL(expected, actual) \
-  scope::eval_equal<scope::test_failure>((expected), (actual), __FILE__, __LINE__)
+  scope::eval_equal<scope::test_failure>(__FILE__, __LINE__, (expected), (actual))
 
 #define SCOPE_ASSERT_EQUAL_MSG(expected, actual, msg) \
-  scope::eval_equal<scope::test_failure>((expected), (actual), __FILE__, __LINE__, msg)
+  scope::eval_equal<scope::test_failure>(__FILE__, __LINE__, (expected), (actual), msg)
 
 #define SCOPE_EXPECT(statement, exception) \
   try { \
