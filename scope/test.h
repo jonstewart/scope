@@ -419,11 +419,11 @@ namespace scope {
 #define SCOPE_ASSERT(condition) \
   SCOPE_ASSERT_THROW(condition, scope::test_failure)
   
-#define SCOPE_ASSERT_EQUAL(expected, actual) \
-  scope::eval_equal<scope::test_failure>(__FILE__, __LINE__, (expected), (actual))
+#define SCOPE_ASSERT_EQUAL(...) \
+  scope::eval_equal<scope::test_failure>(__FILE__, __LINE__, __VA_ARGS__)
 
-#define SCOPE_ASSERT_EQUAL_MSG(expected, actual, msg) \
-  scope::eval_equal<scope::test_failure>(__FILE__, __LINE__, (expected), (actual), msg)
+#define SCOPE_ASSERT_EQUAL_MSG(...) \
+  scope::eval_equal<scope::test_failure>(__FILE__, __LINE__, __VA_ARGS__)
 
 #define SCOPE_EXPECT(statement, exception) \
   try { \
