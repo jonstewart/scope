@@ -5,6 +5,8 @@
 
 #include "scope/test.h"
 
+#include <vector>
+
 SCOPE_TEST(simpleTest) {
   SCOPE_ASSERT(true);
 }
@@ -32,4 +34,19 @@ SCOPE_TEST_FAILS(aGoodBadTest) {
 
 SCOPE_TEST_IGNORE(thisTestNeverRuns) {
   *reinterpret_cast<int*>(1) = 25; // segfaults
+}
+
+SCOPE_TEST(simpleEquality) {
+  SCOPE_ASSERT_EQUAL(1, 1);
+}
+
+SCOPE_TEST(sequenceEquality) {
+  std::vector<int> e = {1, 2, 3};
+  std::list<int> a = {1, 2, 3};
+  SCOPE_ASSERT_EQUAL(e, a);
+}
+
+SCOPE_TEST(initListEqual) {
+  std::vector<int> a = {1, 2, 3};
+  SCOPE_ASSERT_EQUAL({1, 2, 3}, a);
 }

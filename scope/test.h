@@ -146,6 +146,24 @@ namespace scope {
     );
   }
 
+  // eval_equal for arguments passed by const reference
+  template <
+    typename ExceptionType,
+    typename ExpectedT,
+    typename ActualT,
+    typename = typename std::enable_if<
+      !pass_by_value<ExpectedT, ActualT>::value
+    >::type
+  >
+  void eval_equal(const char* const file, int line, const std::initializer_list<ExpectedT>& e, const ActualT& a, const char* msg = "") {
+    eval_equal_impl<ExceptionType>(
+      std::forward<const std::initializer_list<ExpectedT>&>(e),
+      std::forward<const ActualT&>(a),
+      0, // prefer sequence overload, because 0 is an int
+      file, line, msg
+    );
+  }
+
   struct TestCommon {
     TestCommon(const std::string& name): Name(name) {}
     virtual ~TestCommon() {}
