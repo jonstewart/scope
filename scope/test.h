@@ -60,7 +60,9 @@ namespace scope {
     typename ExpSequenceT,
     typename ActSequenceT
   >
-  auto eval_equal_impl(ExpSequenceT&& e, ActSequenceT&& a, int, const char* const file, int line, const char* msg = "") -> decltype(std::begin(e), std::end(e), std::begin(a), std::end(a), void()) {
+  auto eval_equal_impl(ExpSequenceT&& e, ActSequenceT&& a, int, const char* const file, int line, const char* msg = "")
+   -> decltype(std::begin(e), std::end(e), std::begin(a), std::end(a), void())
+  {
     const auto abeg = std::begin(a);
     const auto aend = std::end(a);
     const auto ebeg = std::begin(e);
@@ -146,7 +148,7 @@ namespace scope {
     );
   }
 
-  // eval_equal for arguments passed by const reference
+  // eval_equal for std::initializer_list as expected arg, actual by const-ref
   template <
     typename ExceptionType,
     typename ExpectedT,
