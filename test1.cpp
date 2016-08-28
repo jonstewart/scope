@@ -6,6 +6,7 @@
 #include "scope/test.h"
 
 #include <vector>
+#include <list>
 
 SCOPE_TEST(simpleTest) {
   SCOPE_ASSERT(true);
@@ -48,5 +49,7 @@ SCOPE_TEST(sequenceEquality) {
 
 SCOPE_TEST(initListEqual) {
   std::vector<int> a = {1, 2, 3};
+  std::list<int> b = {1, 2, 3};
   SCOPE_ASSERT_EQUAL({1, 2, 3}, a);
+  SCOPE_ASSERT_EQUAL({1, 2, 3}, b);
 }
