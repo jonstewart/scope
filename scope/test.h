@@ -19,29 +19,29 @@ namespace scope {
   typedef std::list<std::string> MessageList; // need to replace this with an output iterator
   typedef std::function<void()> TestFunction;
 
-  void RunFunction(TestFunction test, const char* testname, bool shouldFail, MessageList& messages);
-  void CaughtBadExceptionType(const std::string& testname, const std::string& msg);
+  void runFunction(TestFunction test, const char* testname, bool shouldFail, MessageList& messages);
+  void caughtBadExceptionType(const std::string& testname, const std::string& msg);
   
-  class test_failure : public std::runtime_error {
+  class TestFailure: public std::runtime_error {
   public:
-    test_failure(const char* const file, int line, const char *const message):
+    TestFailure(const char* const file, int line, const char *const message):
       std::runtime_error(message), File(file), Line(line) {}
 
-    virtual ~test_failure() {}
+    virtual ~TestFailure() {}
     
     std::string File;
     int Line;
   };
   
   template<typename ExceptionType>
-  void eval_condition(bool good, const char* const file, int line, const char *const expression) {
+  void evalCondition(bool good, const char* const file, int line, const char *const expression) {
     if (!good) {
       throw ExceptionType(file, line, expression);
     }
   }
 
   template<typename ExceptionType, typename ExpectedT, typename ActualT>
-  auto eval_equal_impl(ExpectedT&& e, ActualT&& a, long, const char* const file, int line, const char* msg = "") -> decltype((e == a), void())
+  auto evalEqualImpl(ExpectedT&& e, ActualT&& a, long, const char* const file, int line, const char* msg = "") -> decltype((e == a), void())
   {
     // it'd be good to have a CTAssert on (ExpectedT==ActualT)
     if (!(e == a)) {
@@ -54,13 +54,13 @@ namespace scope {
     }
   }
 
-  // eval_equal_impl for anything having std::begin and std::end overloads
+  // evalEqualImpl for anything having std::begin and std::end overloads
   template <
     typename ExceptionType,
     typename ExpSequenceT,
     typename ActSequenceT
   >
-  auto eval_equal_impl(ExpSequenceT&& e, ActSequenceT&& a, int, const char* const file, int line, const char* msg = "")
+  auto evalEqualImpl(ExpSequenceT&& e, ActSequenceT&& a, int, const char* const file, int line, const char* msg = "")
    -> decltype(std::begin(e), std::end(e), std::begin(a), std::end(a), void())
   {
     const auto abeg = std::begin(a);
@@ -103,7 +103,7 @@ namespace scope {
     }
   }
 
-  // policy for passing arguments to eval_equal by value
+  // policy for passing arguments to evalEqual by value
   template <typename L, typename R>
   using pass_by_value = std::integral_constant<bool,
     (!std::is_class<L>::value &&
@@ -112,7 +112,7 @@ namespace scope {
       std::is_convertible<const R, const L>::value)
   >;
 
-  // eval_equal for arguments passed by value
+  // evalEqual for arguments passed by value
   template<
     typename ExceptionType,
     typename ExpectedT,
@@ -121,8 +121,8 @@ namespace scope {
       pass_by_value<ExpectedT, ActualT>::value
     >::type
   >
-  void eval_equal(const char* const file, int line, const ExpectedT e, const ActualT a, const char* msg = "") {
-    eval_equal_impl<ExceptionType>(
+  void evalEqual(const char* const file, int line, const ExpectedT e, const ActualT a, const char* msg = "") {
+    evalEqualImpl<ExceptionType>(
       std::forward<const ExpectedT>(e),
       std::forward<const ActualT>(a),
       0, // prefer sequence overload, because 0 is an int
@@ -130,7 +130,7 @@ namespace scope {
     );
   }
 
-  // eval_equal for arguments passed by const reference
+  // evalEqual for arguments passed by const reference
   template <
     typename ExceptionType,
     typename ExpectedT,
@@ -139,8 +139,8 @@ namespace scope {
       !pass_by_value<ExpectedT, ActualT>::value
     >::type
   >
-  void eval_equal(const char* const file, int line, const ExpectedT& e, const ActualT& a, const char* msg = "") {
-    eval_equal_impl<ExceptionType>(
+  void evalEqual(const char* const file, int line, const ExpectedT& e, const ActualT& a, const char* msg = "") {
+    evalEqualImpl<ExceptionType>(
       std::forward<const ExpectedT&>(e),
       std::forward<const ActualT&>(a),
       0, // prefer sequence overload, because 0 is an int
@@ -148,7 +148,7 @@ namespace scope {
     );
   }
 
-  // eval_equal for std::initializer_list as expected arg, actual by const-ref
+  // evalEqual for std::initializer_list as expected arg, actual by const-ref
   template <
     typename ExceptionType,
     typename ExpectedT,
@@ -157,8 +157,8 @@ namespace scope {
       !pass_by_value<ExpectedT, ActualT>::value
     >::type
   >
-  void eval_equal(const char* const file, int line, const std::initializer_list<ExpectedT>& e, const ActualT& a, const char* msg = "") {
-    eval_equal_impl<ExceptionType>(
+  void evalEqual(const char* const file, int line, const std::initializer_list<ExpectedT>& e, const ActualT& a, const char* msg = "") {
+    evalEqualImpl<ExceptionType>(
       std::forward<const std::initializer_list<ExpectedT>&>(e),
       std::forward<const ActualT&>(a),
       0, // prefer sequence overload, because 0 is an int
@@ -173,7 +173,7 @@ namespace scope {
     std::string Name;
   };
 
-  class TestCase : public TestCommon {
+  class TestCase: public TestCommon {
   public:
     TestCase(const std::string& name): TestCommon(name) {}
     virtual ~TestCase() {}
@@ -186,7 +186,7 @@ namespace scope {
     virtual void _Run(MessageList& messages) const = 0;
   };
 
-  class BoundTest : public TestCase {
+  class BoundTest: public TestCase {
   public:
     TestFunction Fn;
     bool         ShouldFail;
@@ -196,7 +196,7 @@ namespace scope {
     
   private:
     virtual void _Run(MessageList& messages) const {
-      RunFunction(Fn, Name.c_str(), ShouldFail, messages);
+      runFunction(Fn, Name.c_str(), ShouldFail, messages);
     }
   };
   
@@ -223,7 +223,7 @@ namespace scope {
         fixture = (*Ctor)();
         // std::cerr << "constructed fixture " << std::endl;
       }
-      catch (const test_failure& fail) {
+      catch (const TestFailure& fail) {
         messages.push_back(Name + ": " + fail.what());
         setup = false;
       }
@@ -232,7 +232,7 @@ namespace scope {
         setup = false;
       }
       catch (...) {
-        CaughtBadExceptionType(Name, "setup threw unknown exception type");
+        caughtBadExceptionType(Name, "setup threw unknown exception type");
         setup = false;
         throw;
       }
@@ -244,7 +244,7 @@ namespace scope {
         (*Fn)(*fixture);
         // std::cerr << "ran test" << std::endl;
       }
-      catch (const test_failure& fail) {
+      catch (const TestFailure& fail) {
         std::ostringstream buf;
         buf << fail.File << ":" << fail.Line << ": " << Name << ": " << fail.what();
         messages.push_back(buf.str());
@@ -253,7 +253,7 @@ namespace scope {
         messages.push_back(Name + ": " + except.what());
       }
       catch (...) {
-        CaughtBadExceptionType(Name, "test threw unknown exception type, fixture will leak");
+        caughtBadExceptionType(Name, "test threw unknown exception type, fixture will leak");
         throw;
       }
       try {
@@ -261,8 +261,8 @@ namespace scope {
         delete fixture;
         // std::cerr << "deleted fixture" << std::endl;
       }
-      catch (const test_failure& fail) {
-        // std::cerr << "fixture destructor threw test_failure" << std::endl;
+      catch (const TestFailure& fail) {
+        // std::cerr << "fixture destructor threw TestFailure" << std::endl;
         messages.push_back(Name + ": " + fail.what());
       }
       catch (const std::exception& except) {
@@ -271,7 +271,7 @@ namespace scope {
       }
       catch (...) {
         // std::cerr << "fixture destructor threw something" << std::endl;
-        CaughtBadExceptionType(Name, "teardown threw unknown exception type");
+        caughtBadExceptionType(Name, "teardown threw unknown exception type");
         throw;
       }
     }
@@ -434,21 +434,21 @@ namespace scope {
   void testname(fixtureType& fixture)
 
 #define SCOPE_ASSERT_THROW(condition, exceptiontype) \
-  scope::eval_condition<exceptiontype>((condition) ? true: false, __FILE__, __LINE__, #condition)
+  scope::evalCondition<exceptiontype>((condition) ? true: false, __FILE__, __LINE__, #condition)
 
 #define SCOPE_ASSERT(condition) \
-  SCOPE_ASSERT_THROW(condition, scope::test_failure)
+  SCOPE_ASSERT_THROW(condition, scope::TestFailure)
   
 #define SCOPE_ASSERT_EQUAL(...) \
-  scope::eval_equal<scope::test_failure>(__FILE__, __LINE__, __VA_ARGS__)
+  scope::evalEqual<scope::TestFailure>(__FILE__, __LINE__, __VA_ARGS__)
 
 #define SCOPE_ASSERT_EQUAL_MSG(...) \
-  scope::eval_equal<scope::test_failure>(__FILE__, __LINE__, __VA_ARGS__)
+  scope::evalEqual<scope::TestFailure>(__FILE__, __LINE__, __VA_ARGS__)
 
 #define SCOPE_EXPECT(statement, exception) \
   try { \
     statement; \
-    throw scope::test_failure(__FILE__, __LINE__, "Expected exception not caught"); \
+    throw scope::TestFailure(__FILE__, __LINE__, "Expected exception not caught"); \
   } \
   catch (const exception&) { \
     ; \

@@ -19,16 +19,16 @@
 
 namespace scope {
 
-  void RunFunction(scope::TestFunction test, const char* testname, bool shouldFail, MessageList& messages) {
+  void runFunction(scope::TestFunction test, const char* testname, bool shouldFail, MessageList& messages) {
     try {
       test();
       if (shouldFail) {
         std::string msg(testname);
-        msg.append(": marked for failure but did not throw scope::test_failure.");
+        msg.append(": marked for failure but did not throw scope::TestFailure.");
         messages.push_back(msg);
       }
     }
-    catch (const test_failure& fail) {
+    catch (const TestFailure& fail) {
       if (!shouldFail) {
         std::ostringstream buf;
         buf << fail.File << ":" << fail.Line << ": " << testname << ": " << fail.what();
@@ -39,17 +39,17 @@ namespace scope {
       messages.push_back(std::string(testname) + ": " + except.what());
     }
     catch (...) {
-      CaughtBadExceptionType(testname, "test threw unrecognized type");
+      caughtBadExceptionType(testname, "test threw unrecognized type");
       throw;
     }
   }
 
-  void CaughtBadExceptionType(const std::string& name, const std::string& msg) {
+  void caughtBadExceptionType(const std::string& name, const std::string& msg) {
     std::cerr << name << ": " << msg << "; please at least inherit from std::exception" << std::endl;
   }
 
   namespace {
-    class TestRunnerImpl : public TestRunner {
+    class TestRunnerImpl: public TestRunner {
     public:
       TestRunnerImpl():
         NumTests(0), NumRun(0), Debug(false) {}
