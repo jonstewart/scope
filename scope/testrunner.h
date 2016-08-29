@@ -69,18 +69,10 @@ namespace scope {
       }
 
       virtual void run(MessageList& messages) {
-        auto& r(root());
-        for (auto curlist(r.FirstChild); curlist; curlist = curlist->Next) {
-          for (auto cur(curlist->FirstChild); cur; cur = cur->Next) {
-            ++NumTests;
-          }
-        }
-        for (auto curlist(r.FirstChild); curlist; curlist = curlist->Next) {
-          for (auto cur(curlist->FirstChild); cur; cur = cur->Next) {
-            std::unique_ptr<TestCase> test(cur->Construct());
-            runTest(*test, messages);
-          }
-        }
+        traverse([this, &messages](AutoRegister* cur) { 
+          std::unique_ptr<TestCase> test(cur->Construct());
+          this->runTest(*test, messages);        
+        });
       }
 
       virtual unsigned int numTests() const {
@@ -97,6 +89,21 @@ namespace scope {
 
       virtual void setFilter(const std::shared_ptr<std::regex>& filter) {
         NameFilter = filter;
+      }
+
+      template<class FnType>
+      void traverse(FnType&& fn) {
+        auto& r(root());
+        for (auto curlist(r.FirstChild); curlist; curlist = curlist->Next) {
+          for (auto cur(curlist->FirstChild); cur; cur = cur->Next) {
+            ++NumTests;
+          }
+        }
+        for (auto curlist(r.FirstChild); curlist; curlist = curlist->Next) {
+          for (auto cur(curlist->FirstChild); cur; cur = cur->Next) {
+            fn(cur);
+          }
+        }
       }
 
     private:
@@ -153,6 +160,7 @@ namespace scope {
     TCLAP::ValueArg<std::string> filter("f", "filter", "Only run tests whose names match provided regexp", false, "", "regexp", parser);
 
     TCLAP::SwitchArg verbose("v", "verbose", "Print debugging info", parser);
+    TCLAP::SwitchArg list("l", "list", "List test names", parser);
 
     try {
       parser.parse(argc, argv);
@@ -161,6 +169,8 @@ namespace scope {
       std::cerr << "Error: " << e.error() << " for argument " << e.argId() << std::endl;
       return false;
     }
+
+
     MessageList msgs;
     TestRunnerImpl runner;
     std::string f(filter.getValue());
@@ -172,6 +182,10 @@ namespace scope {
         std::cerr << "Error with filter regexp '" << f << "': " << e.what() << std::endl;
         return false;
       }
+    }
+    if (list.getValue()) {
+      runner.traverse([](AutoRegister* cur) { std::cerr << cur->TestName << '\n'; });
+      return true;
     }
     if (verbose.getValue()) {
       runner.setDebug(true);
