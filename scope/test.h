@@ -357,7 +357,7 @@ namespace scope {
     }
   };
 
-  template<class FixtureT> class AutoRegisterFixture: public AutoRegister {
+  template<class FixtureT> class AutoRegisterFixture: public AutoRegisterTest {
   public:
     typedef void (*FixtureTestFunction)(FixtureT&);
     typedef FixtureT* (*FixtureCtorFunction)(void);
@@ -365,7 +365,7 @@ namespace scope {
     FixtureTestFunction Fn;
     FixtureCtorFunction Ctor;
 
-    AutoRegisterFixture(const char* name, FixtureTestFunction fn, FixtureCtorFunction ctor): AutoRegister(name), Fn(fn), Ctor(ctor) {}
+    AutoRegisterFixture(const char* name, FixtureTestFunction fn, FixtureCtorFunction ctor): AutoRegisterTest(name), Fn(fn), Ctor(ctor) {}
     virtual ~AutoRegisterFixture() {}
 
     virtual TestCase* Construct() {
