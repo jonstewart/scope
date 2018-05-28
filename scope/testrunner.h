@@ -11,6 +11,8 @@
 #include <memory>
 #include <map>
 #include <regex>
+#include <thread>
+#include <mutex>
 
 #include "tclap/CmdLine.h"
 
@@ -65,6 +67,7 @@ namespace scope {
           if (Debug) {
             std::cerr << "Done with " << test.Name << std::endl;
           }
+          lastTest().clear();
         }
       }
 
@@ -126,8 +129,17 @@ namespace scope {
   }
 
   void handleTerminate() {
-    std::cerr << "std::terminate called, last test was " << TestRunner::lastTest() << ". Aborting." << std::endl;
-    std::abort();
+    // the handler can be called on multiple threads
+    // this is a legitimate use of a static mutex
+    // weirdly
+    static std::mutex theHighlander;
+    std::lock_guard<std::mutex> lock(theHighlander);
+    {
+      std::cerr << "std::terminate called, last test was "
+                << TestRunner::lastTest()
+                << ". Aborting." << std::endl;
+      std::abort();
+    }
   }
 
   std::map<int, std::string> signalMap() {

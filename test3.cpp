@@ -1,5 +1,7 @@
 #include "scope/test.h"
 
+#include <thread>
+
 namespace {
   using namespace scope;
 
@@ -67,4 +69,8 @@ namespace {
   //   return make_pair({1, 2, 3, 4, 5},
   //                   [](int x){ return x == 2; });
   // });
+}
+
+SCOPE_TEST(testThreadDeath) {
+  std::thread killer([](){ throw int(0); });
 }
