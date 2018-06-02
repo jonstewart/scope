@@ -47,9 +47,16 @@ SCOPE_TEST(sequenceEquality) {
   SCOPE_ASSERT_EQUAL(e, a);
 }
 
-SCOPE_TEST(initListEqual) {
+SCOPE_TEST(initListExpectedEqual) {
   std::vector<int> a = {1, 2, 3};
   std::list<int> b = {1, 2, 3};
   SCOPE_ASSERT_EQUAL({1, 2, 3}, a);
   SCOPE_ASSERT_EQUAL({1, 2, 3}, b);
+}
+
+SCOPE_TEST(initListActualEqual) {
+  std::vector<int> a = {1, 2, 3};
+  std::list<int> b = {1, 2, 3};
+  SCOPE_ASSERT_EQUAL(a, {1, 2, 3});
+  SCOPE_ASSERT_EQUAL(b, {1, 2, 3});
 }
