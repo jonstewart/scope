@@ -60,3 +60,7 @@ SCOPE_TEST(initListActualEqual) {
   SCOPE_ASSERT_EQUAL(a, {1, 2, 3});
   SCOPE_ASSERT_EQUAL(b, {1, 2, 3});
 }
+
+SCOPE_TEST(initListPedantic) {
+  SCOPE_ASSERT_EQUAL({1, 2, 3}, {1, 2, 3});
+}

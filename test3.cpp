@@ -71,6 +71,6 @@ namespace {
   // });
 }
 
-SCOPE_TEST(testThreadDeath) {
-  std::thread killer([](){ throw int(0); });
-}
+// SCOPE_TEST(testThreadDeath) {
+//   std::thread killer([](){ throw int(0); });
+// }
