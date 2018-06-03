@@ -51,6 +51,11 @@ namespace scope {
   }
 
   namespace {
+    template<class X>
+    bool always_true(const X&) {
+      return true;
+    }
+
     class TestRunnerImpl: public TestRunner {
     public:
       TestRunnerImpl():
@@ -99,12 +104,15 @@ namespace scope {
         NameFilter = filter;
       }
 
-      template<class FnType> // void(AutoRegister*)
-      void traverse(FnType&& fn) {
+      template<class AutoRegFnType, // void(AutoRegister*)
+               class SuiteEvalType = decltype(always_true<AutoRegister*>)>
+      void traverse(AutoRegFnType&& fn, SuiteEvalType&& evalFn = always_true<AutoRegister*>) {
         auto& r(root());
         for (auto curlist(r.FirstChild); curlist; curlist = curlist->Next) {
-          for (auto cur(curlist->FirstChild); cur; cur = cur->Next) {
-            fn(cur);
+          if (evalFn(curlist)) {
+            for (auto cur(curlist->FirstChild); cur; cur = cur->Next) {
+              fn(cur);
+            }
           }
         }
       }
