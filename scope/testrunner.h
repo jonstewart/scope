@@ -54,7 +54,12 @@ namespace scope {
     class TestRunnerImpl: public TestRunner {
     public:
       TestRunnerImpl():
-        NumTests(0), NumRun(0), Debug(false) {}
+        NumTests(0), NumRun(0), Debug(false)
+      {
+        traverse([this](AutoRegister*) {
+          ++this->NumTests;
+        });
+      }
 
       virtual void runTest(const TestCase& test, MessageList& messages) {
         if (!NameFilter || std::regex_match(test.Name, *NameFilter)) {
@@ -94,14 +99,9 @@ namespace scope {
         NameFilter = filter;
       }
 
-      template<class FnType>
+      template<class FnType> // void(AutoRegister*)
       void traverse(FnType&& fn) {
         auto& r(root());
-        for (auto curlist(r.FirstChild); curlist; curlist = curlist->Next) {
-          for (auto cur(curlist->FirstChild); cur; cur = cur->Next) {
-            ++NumTests;
-          }
-        }
         for (auto curlist(r.FirstChild); curlist; curlist = curlist->Next) {
           for (auto cur(curlist->FirstChild); cur; cur = cur->Next) {
             fn(cur);
@@ -181,7 +181,6 @@ namespace scope {
       std::cerr << "Error: " << e.error() << " for argument " << e.argId() << std::endl;
       return false;
     }
-
 
     MessageList msgs;
     TestRunnerImpl runner;
