@@ -51,4 +51,3 @@ struct Fixture4: public Fixture1 {
 SCOPE_FIXTURE_CTOR(customFixture, Fixture1, Fixture4(7)) {
   SCOPE_ASSERT_EQUAL(7, fixture.Int);
 }
-
