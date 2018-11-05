@@ -205,45 +205,6 @@ namespace scope {
      evalEqualImplTuple<ExceptionType, ExpTupleT, ActTupleT>(e, a, std::integral_constant<size_t, 0>(), file, line, msg);
    }
 
-  //// evalEqualImpl for std::pair
-  //template <
-  //  typename ExceptionType,
-  //  typename ExpPairT,
-  //  typename ActPairT
-  //>
-  //auto evalEqualImpl(ExpPairT&& e, ActPairT&& a, int x, const char* const file, int line, const char* msg = "")
-  // -> decltype(e.first, e.second,
-  //             a.first, a.second,
-  //             e.first == a.first,
-  //             e.second == a.second,
-  //             void())
-  //{
-  //  // You'd think making these into std::tuples and calling the std::tuple evalEqualImpl would be easy...
-  //  if (e != a) {
-  //    std::ostringstream buf;
-  //    if (*msg) {
-  //      buf << msg << " ";
-  //    }
-
-  //    if (!(e.first == a.first)) {
-  //      buf << "Mismatch at index 0. Expected: "
-  //          << e.first
-  //          << ", Actual: "
-  //          << a.first;
-  //    }
-  //    else if (!(e.second == a.second)) {
-  //      buf << "Mismatch at index 1. Expected: "
-  //          << e.second
-  //          << ", Actual: "
-  //          << a.second;
-  //    }
-  //    buf << ", Expected size: 2"
-  //        << ", Actual size: 2";
-
-  //    throw ExceptionType(file, line, buf.str().c_str());
-  //  }
-  //}
-
   // policy for passing arguments to evalEqual by value
   template <typename L, typename R>
   using pass_by_value = std::integral_constant<bool,
