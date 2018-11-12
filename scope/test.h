@@ -197,7 +197,7 @@ namespace scope {
     typename ExpTupleT,
     typename ActTupleT
   >
-  auto evalEqualImpl(ExpTupleT&& e, ActTupleT && a, int, const char* const file, int line, const char* msg = "")
+  auto evalEqualImpl(ExpTupleT&& e, ActTupleT&& a, int, const char* const file, int line, const char* msg = "")
    -> decltype(std::tuple_size<typename std::remove_reference<ExpTupleT>::type>::value,
                std::tuple_size<typename std::remove_reference<ActTupleT>::type>::value,
                void())
