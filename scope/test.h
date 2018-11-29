@@ -107,7 +107,7 @@ namespace scope {
   template <
     typename TupleT
   >
-  const char* tupleGetOrDefault(TupleT&& tup, std::integral_constant<size_t, std::tuple_size<typename std::remove_reference<TupleT>::type>::value>)
+  const char* tupleGetOrDefault(TupleT&&, std::integral_constant<size_t, std::tuple_size<typename std::remove_reference<TupleT>::type>::value>)
   {
     return "*past end*";
   }
