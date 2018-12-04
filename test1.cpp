@@ -7,6 +7,7 @@
 
 #include <vector>
 #include <list>
+#include <set>
 
 SCOPE_TEST(simpleTest) {
   SCOPE_ASSERT(true);
@@ -74,5 +75,19 @@ SCOPE_TEST(pairEquality) {
 SCOPE_TEST(tupleEquality) {
   std::tuple<int, std::string, double> a = {5, "hello", 3.14};
   std::tuple<int, std::string, double> b = {5, "hello, world", 3.141592653};
+  SCOPE_ASSERT_EQUAL(a, b);
+}
+
+SCOPE_TEST(setEquality) {
+  std::set<std::string> a {"hello", "world"};
+  std::set<std::string> b {"hello", "world"};
+
+  SCOPE_ASSERT_EQUAL(a, b);
+}
+
+SCOPE_TEST(setInequality) {
+  std::set<std::string> a {"hello", "world"};
+  std::set<std::string> b {"hello"};
+
   SCOPE_ASSERT_EQUAL(a, b);
 }

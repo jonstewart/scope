@@ -42,7 +42,7 @@ namespace scope {
 
   template<typename ExceptionType, typename ExpectedT, typename ActualT>
   auto evalEqualImpl(ExpectedT&& e, ActualT&& a, long, const char* const file, int line, const char* msg = "")
-   -> decltype((e == a), std::ostringstream() << e, std::ostringstream() << a, void())
+   -> decltype((e == a), std::declval<std::ostringstream&>() << e, std::declval<std::ostringstream&>() << a, void())
   {
     // it'd be good to have a CTAssert on (ExpectedT==ActualT)
     if (!(e == a)) {
@@ -107,7 +107,7 @@ namespace scope {
   template <
     typename TupleT
   >
-  const char* tupleGetOrDefault(TupleT&& tup, std::integral_constant<size_t, std::tuple_size<typename std::remove_reference<TupleT>::type>::value>)
+  const char* tupleGetOrDefault(TupleT&&, std::integral_constant<size_t, std::tuple_size<typename std::remove_reference<TupleT>::type>::value>)
   {
     return "*past end*";
   }
