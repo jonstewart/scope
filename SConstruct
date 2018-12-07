@@ -15,11 +15,11 @@ def getVar(name, suggested):
 
 vars = Variables('build_variables.py')
 vars.AddVariables(
-  ('boostType', 'Suffix to add to Boost libraries to enable finding them', ''),
+#  ('boostType', 'Suffix to add to Boost libraries to enable finding them', ''),
   ('CC', 'set the name of the C compiler to use (scons finds default)', 'gcc'),
   ('CXX', 'set the name of the C++ compiler to use (scons finds default)', 'g++'),
   ('CXXFLAGS', 'add flags for the C++ compiler to CXXFLAGS', '-std=c++11 -Wall -Wextra'),
-  ('CPPPATH', 'Include path for preprocessor', getVar('BOOST_ROOT', '/usr/local/include/boost')),
+#  ('CPPPATH', 'Include path for preprocessor', getVar('BOOST_ROOT', '/usr/local/include/boost')),
   ('LINKFLAGS', 'add flags for the linker to LINKFLAGS', '')
 )
 
