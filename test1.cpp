@@ -67,14 +67,8 @@ SCOPE_TEST(initListPedantic) {
 }
 
 SCOPE_TEST(pairEquality) {
-  std::pair<int, std::string> a = {5, "hello"};
+  std::pair<short, std::string> a = {5, "hello"};
   std::pair<int, std::string> b = {5, "hello, world"};
-  SCOPE_ASSERT_EQUAL(a, b);
-}
-
-SCOPE_TEST(tupleEquality) {
-  std::tuple<int, std::string, double> a = {5, "hello", 3.14};
-  std::tuple<int, std::string, double> b = {5, "hello, world", 3.141592653};
   SCOPE_ASSERT_EQUAL(a, b);
 }
 

@@ -191,7 +191,7 @@ namespace scope {
     evalEqualImplTuple<ExceptionType, ExpTupleT, ActTupleT>(e, a, std::integral_constant<size_t, I+1>(), file, line, msg);
   }
 
-  // evalEqualImpl for std::tuple, std::pair
+  // evalEqualImpl for std::tuple -- still needs work for clang & gcc
   template <
     typename ExceptionType,
     typename ExpTupleT,
@@ -248,6 +248,37 @@ namespace scope {
       0, // prefer sequence overload, because 0 is an int
       file, line, msg
     );
+  }
+
+  // evalEqual for std::pairs (const-ref)
+  template <
+    typename ExceptionType,
+    typename ExpectedFirstT,
+    typename ExpectedSecondT,
+    typename ActualFirstT,
+    typename ActualSecondT
+  >
+  void evalEqual(const char* const file,
+                 int line,
+                 const std::pair<ExpectedFirstT, ExpectedSecondT>& e,
+                 const std::pair<ActualFirstT, ActualSecondT>& a,
+                 const char* msg = "")
+  {
+    if (e.first != a.first || e.second != a.second) {
+      std::ostringstream buf;
+      if (*msg) {
+        buf << msg << ". ";
+      }
+      if (e.first != a.first) {
+        buf << "Expected first: " << e.first
+          << ", Actual first: " << a.first << ". ";
+      }
+      if (e.second != a.second) {
+        buf << "Expected second: " << e.second
+          << ", Actual second: " << a.second << ".";
+      }
+      throw ExceptionType(file, line, buf.str().c_str());
+    }
   }
 
   // evalEqual for std::initializer_list as expected arg, actual by const-ref
