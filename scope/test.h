@@ -505,15 +505,6 @@ namespace scope {
     }
   };
 
-  class AutoRegisterSet: public AutoRegister {
-  public:
-    AutoRegisterSet(const char* name):
-      AutoRegister(name, "")
-    {
-      TestRunner::root().insert(*this);
-    }
-  };
-
   class Test: public AutoRegisterTest {
   public:
     TestFunction  Fn;
