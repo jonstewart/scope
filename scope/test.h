@@ -317,7 +317,7 @@ namespace scope {
     );
   }
 
-  // evalEqual for std::initializer_list as actual arg, expected by const-ref
+  // evalEqual for both args as std::initializer_list
   template <
     typename ExceptionType,
     typename ExpectedT,
