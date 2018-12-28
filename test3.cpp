@@ -11,7 +11,7 @@ namespace {
   // if it throws the test fails
   // else the test passes
   // totally works with a lambda
-  Test traditionalFreeTest("traditionalFreeTest", []{
+  Test traditionalFreeTest("traditionalFreeTest", __FILE__, []{
     SCOPE_ASSERT_EQUAL(2, 1 + 1);
   });
 

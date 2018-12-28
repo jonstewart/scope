@@ -67,7 +67,10 @@ namespace scope {
       }
 
       virtual void runTest(const TestCase& test, MessageList& messages) {
-        if (!NameFilter || std::regex_match(test.Name, *NameFilter)) {
+        if (!(NameFilter || SourceFilter)
+          || (NameFilter && std::regex_match(test.Name, *NameFilter))
+          || (SourceFilter && std::regex_match(test.SourceFile, *SourceFilter)))
+        {
           lastTest() = test.Name;
           if (Debug) {
             std::cerr << "Running " << test.Name << std::endl;
@@ -104,6 +107,10 @@ namespace scope {
         NameFilter = filter;
       }
 
+      virtual void setSourceFilter(const std::shared_ptr<std::regex>& sourceFilter) {
+        SourceFilter = sourceFilter;
+      }
+
       template<class AutoRegFnType, // void(AutoRegister*)
                class SuiteEvalType = decltype(always_true<AutoRegister*>)>
       void traverse(AutoRegFnType&& fn, SuiteEvalType&& evalFn = always_true<AutoRegister*>) {
@@ -118,7 +125,8 @@ namespace scope {
       }
 
     private:
-      std::shared_ptr<std::regex> NameFilter;
+      std::shared_ptr<std::regex> NameFilter,
+                                  SourceFilter;
 
       unsigned int  NumTests,
                     NumRun;
@@ -175,9 +183,10 @@ namespace scope {
   }
 
   bool DefaultRun(std::ostream& out, int argc, char** argv) {
-    TCLAP::CmdLine parser("Scope test", ' ', "version number?");
+    TCLAP::CmdLine parser("Scope test", ' ', "version number? what's a version number?", true);
 
-    TCLAP::ValueArg<std::string> filter("f", "filter", "Only run tests whose names match provided regexp", false, "", "regexp", parser);
+    TCLAP::ValueArg<std::string> sourceFile("s", "source-filter", "Run tests from source files where the filenames match the provided regexp", false, "", "regexp", parser);
+    TCLAP::ValueArg<std::string> filter("f", "filter", "Only run test cases whose names match provided regexp", false, "", "regexp", parser);
 
     TCLAP::SwitchArg verbose("v", "verbose", "Print debugging info", parser);
     TCLAP::SwitchArg list("l", "list", "List test names", parser);
@@ -202,8 +211,19 @@ namespace scope {
         return false;
       }
     }
+    std::string s(sourceFile.getValue());
+    if (!s.empty()) {
+      try {
+        runner.setSourceFilter(std::make_shared<std::regex>(s));
+      }
+      catch (std::regex_error& e) {
+        std::cerr << "Error with filter regexp '" << s << "': " << e.what() << std::endl;
+        return false;
+      }
+    }
+
     if (list.getValue()) {
-      runner.traverse([](AutoRegister* cur) { std::cerr << cur->TestName << '\n'; });
+      runner.traverse([](AutoRegister* cur) { std::cerr << cur->TestName << '\t' << cur->SourceFile << '\n'; });
       return true;
     }
     if (verbose.getValue()) {

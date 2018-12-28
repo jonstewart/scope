@@ -338,15 +338,18 @@ namespace scope {
   }
 
   struct TestCommon {
-    TestCommon(const std::string& name): Name(name) {}
+    TestCommon(const std::string& name, const std::string& source):
+      Name(name), SourceFile(source) {}
+
     virtual ~TestCommon() {}
 
-    std::string Name;
+    std::string Name,
+                SourceFile;
   };
 
   class TestCase: public TestCommon {
   public:
-    TestCase(const std::string& name): TestCommon(name) {}
+    TestCase(const std::string& name, const std::string& source): TestCommon(name, source) {}
     virtual ~TestCase() {}
 
     void Run(MessageList& messages) const {
@@ -362,8 +365,8 @@ namespace scope {
     TestFunction Fn;
     bool         ShouldFail;
 
-    BoundTest(const std::string& name, TestFunction fn, bool shouldFail):
-      TestCase(name), Fn(fn), ShouldFail(shouldFail) {}
+    BoundTest(const std::string& name, const std::string& source, TestFunction fn, bool shouldFail):
+      TestCase(name, source), Fn(fn), ShouldFail(shouldFail) {}
 
   private:
     virtual void _Run(MessageList& messages) const {
@@ -383,7 +386,8 @@ namespace scope {
     FixtureTestFunction Fn;
     FixtureCtorFunction Ctor;
 
-    FixtureTest(const std::string& name, FixtureTestFunction fn, FixtureCtorFunction ctor): TestCase(name), Fn(fn), Ctor(ctor) {}
+    FixtureTest(const std::string& name, const std::string& source, FixtureTestFunction fn, FixtureCtorFunction ctor):
+      TestCase(name, source), Fn(fn), Ctor(ctor) {}
 
   private:
     virtual void _Run(MessageList& messages) const {
@@ -487,8 +491,9 @@ namespace scope {
   class AutoRegister: public Node<AutoRegister> {
   public:
     const char*     TestName;
+    const char*     SourceFile;
 
-    AutoRegister(const char* name): TestName(name) {}
+    AutoRegister(const char* name, const char* source): TestName(name), SourceFile(source) {}
 
     virtual ~AutoRegister() {}
 
@@ -497,8 +502,8 @@ namespace scope {
 
   class AutoRegisterTest: public AutoRegister {
   public:
-    AutoRegisterTest(const char* name):
-      AutoRegister(name)
+    AutoRegisterTest(const char* name, const char* source):
+      AutoRegister(name, source)
     {
       GetTranslationUnitSet().insert(*this);
     }
@@ -507,7 +512,7 @@ namespace scope {
   class AutoRegisterSet: public AutoRegister {
   public:
     AutoRegisterSet(const char* name):
-      AutoRegister(name)
+      AutoRegister(name, "")
     {
       TestRunner::root().insert(*this);
     }
@@ -518,13 +523,13 @@ namespace scope {
     TestFunction  Fn;
     bool          ShouldFail;
 
-    Test(const char* name, TestFunction fn, bool shouldFail = false):
-      AutoRegisterTest(name), Fn(fn), ShouldFail(shouldFail) {}
+    Test(const char* name, const char* source, TestFunction fn, bool shouldFail = false):
+      AutoRegisterTest(name, source), Fn(fn), ShouldFail(shouldFail) {}
 
     virtual ~Test() {}
 
     virtual TestCase* Construct() {
-      return new BoundTest(TestName, Fn, ShouldFail);
+      return new BoundTest(TestName, SourceFile, Fn, ShouldFail);
     }
   };
 
@@ -536,17 +541,19 @@ namespace scope {
     FixtureTestFunction Fn;
     FixtureCtorFunction Ctor;
 
-    AutoRegisterFixture(const char* name, FixtureTestFunction fn, FixtureCtorFunction ctor): AutoRegisterTest(name), Fn(fn), Ctor(ctor) {}
+    AutoRegisterFixture(const char* name, const char* source, FixtureTestFunction fn, FixtureCtorFunction ctor):
+      AutoRegisterTest(name, source), Fn(fn), Ctor(ctor) {}
+
     virtual ~AutoRegisterFixture() {}
 
     virtual TestCase* Construct() {
-      return new FixtureTest<FixtureT>(TestName, Fn, Ctor);
+      return new FixtureTest<FixtureT>(TestName, SourceFile, Fn, Ctor);
     }
   };
 
   namespace {
     AutoRegister& GetTranslationUnitSet() {
-      static AutoRegisterSet singleton(__FILE__);
+      static AutoRegisterSet singleton("scope::root");
       return singleton;
     }
   }
@@ -569,7 +576,7 @@ namespace scope {
 
 #define SCOPE_TEST_AUTO_REGISTRATION(testname, shouldFail) \
   namespace scope { namespace user_defined { namespace { namespace SCOPE_CAT(testname, ns) { \
-    Test reg(#testname, testname, shouldFail); \
+    Test reg(#testname, __FILE__, testname, shouldFail); \
   } } } }
 
 #define SCOPE_TEST(testname) \
@@ -588,7 +595,7 @@ namespace scope {
 
 #define SCOPE_FIXTURE_AUTO_REGISTRATION(fixtureType, testfunction, ctorfunction) \
   namespace scope { namespace user_defined { namespace { namespace SCOPE_CAT(testfunction, ns) { \
-    AutoRegisterFixture<fixtureType> reg(#testfunction, testfunction, ctorfunction); \
+    AutoRegisterFixture<fixtureType> reg(#testfunction, __FILE__, testfunction, ctorfunction); \
   } } } }
 
 #define SCOPE_FIXTURE(testname, fixtureType) \
