@@ -484,10 +484,6 @@ namespace scope {
     T*  FirstChild;
   };
 
-  namespace {
-    AutoRegister& GetTranslationUnitSet();
-  }
-
   class AutoRegister: public Node<AutoRegister> {
   public:
     const char*     TestName;
@@ -505,7 +501,7 @@ namespace scope {
     AutoRegisterTest(const char* name, const char* source):
       AutoRegister(name, source)
     {
-      GetTranslationUnitSet().insert(*this);
+      TestRunner::root().insert(*this);
     }
   };
 
@@ -551,15 +547,7 @@ namespace scope {
     }
   };
 
-  namespace {
-    AutoRegister& GetTranslationUnitSet() {
-      static AutoRegisterSet singleton("scope::root");
-      return singleton;
-    }
-  }
-
   namespace user_defined {}
-
 }
 
 #define SCOPE_CAT(s1, s2) s1##s2

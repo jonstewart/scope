@@ -111,16 +111,11 @@ namespace scope {
         SourceFilter = sourceFilter;
       }
 
-      template<class AutoRegFnType, // void(AutoRegister*)
-               class SuiteEvalType = decltype(always_true<AutoRegister*>)>
-      void traverse(AutoRegFnType&& fn, SuiteEvalType&& evalFn = always_true<AutoRegister*>) {
+      template<class AutoRegFnType>
+      void traverse(AutoRegFnType&& fn) {
         auto& r(root());
-        for (auto curlist(r.FirstChild); curlist; curlist = curlist->Next) {
-          if (evalFn(curlist)) {
-            for (auto cur(curlist->FirstChild); cur; cur = cur->Next) {
-              fn(cur);
-            }
-          }
+        for (auto cur(r.FirstChild); cur; cur = cur->Next) {
+          fn(cur);
         }
       }
 
