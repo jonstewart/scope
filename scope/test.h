@@ -14,7 +14,6 @@
 // #include <iostream>
 
 
-
 namespace scope {
   typedef std::list<std::string> MessageList; // need to replace this with an output iterator
   typedef std::function<void()> TestFunction;
@@ -40,6 +39,30 @@ namespace scope {
     }
   }
 
+
+/**************************** evalEqual mechanics *****************************
+
+  There are several different template functions for evalEqual(). They are used
+  to sort out differences between the Expected and Actual parameters. In particular,
+  they divide these parameters up as such:
+   - whether the args are primitive and should be passed by value
+   - whether the args are std::pairs
+   - whether the args feature a std::initializer_list for one or both
+
+   The std::pair form provides a concrete implementation. The rest forward to evalEqualImpl,
+   which has two forms. Their arguments differ in that one takes an int as a dummy
+   parameter and the other a long. The one with an int treats the Expected and 
+   Actual arguments as sequences, for which std::begin() and std::end() are defined.
+   In forwarding, evalEqual() passes "0" to the dummy parameter, and because 0 
+   is an int, the sequence version of evalEqual() is preferred. But if the types
+   do not satisfy std::begin() and std::end(), then, due to SFINAE, the evalEqualImpl
+   that takes a long will be selected, which simply calls op== on the two arguments.
+
+
+  TO-DO:
+    - provide specialization for comparison of std::tuple args (see bottom of header)
+    - provide specialization for epsilon-comparison of floating point scalars
+*/
   template<typename ExceptionType, typename ExpectedT, typename ActualT>
   auto evalEqualImpl(ExpectedT&& e, ActualT&& a, long, const char* const file, int line, const char* msg = "")
    -> decltype((e == a), std::declval<std::ostringstream&>() << e, std::declval<std::ostringstream&>() << a, void())
@@ -103,107 +126,6 @@ namespace scope {
       throw ExceptionType(file, line, buf.str().c_str());
     }
   }
-
-  template <
-    typename TupleT
-  >
-  const char* tupleGetOrDefault(TupleT&&, std::integral_constant<size_t, std::tuple_size<typename std::remove_reference<TupleT>::type>::value>)
-  {
-    return "*past end*";
-  }
-
-  template <
-    typename TupleT,
-    size_t I,
-    typename = typename std::enable_if<I!=std::tuple_size<typename std::remove_reference<TupleT>::type>::value>::type
-  >
-  const char* tupleGetOrDefault(TupleT&& tup, std::integral_constant<size_t, I>)
-  {
-    std::ostringstream buf;
-    buf << std::get<I>(tup);
-    return buf.str().c_str();
-  }
-
-  template <
-    typename ExceptionType,
-    typename ExpTupleT,
-    typename ActTupleT
-  >
-  void  evalEqualImplTuple(ExpTupleT&& e,
-                          ActTupleT && a,
-                          std::integral_constant<size_t,
-                                                std::min(std::tuple_size<typename std::remove_reference<ExpTupleT>::type>::value,
-                                                         std::tuple_size<typename std::remove_reference<ActTupleT>::type>::value)> I,
-                          const char* const file, int line, const char* msg )
-  {
-    if (I != std::max(std::tuple_size<typename std::remove_reference<ExpTupleT>::type>::value,
-                      std::tuple_size<typename std::remove_reference<ActTupleT>::type>::value)) {
-      size_t eSize = std::tuple_size<typename std::remove_reference<ExpTupleT>::type>::value;
-      size_t aSize = std::tuple_size<typename std::remove_reference<ActTupleT>::type>::value;
-      std::ostringstream buf;
-      if (*msg) {
-        buf << msg << " ";
-      }
-
-      buf << "Mismatch at index "
-          << I
-          << ". Expected: "
-          << tupleGetOrDefault(e, std::integral_constant<size_t, I>())
-          << ", Actual: "
-          << tupleGetOrDefault(a, std::integral_constant<size_t, I>())
-          << ", Expected size: " << eSize
-          << ", Actual size: " << aSize;
-
-      throw ExceptionType(file, line, buf.str().c_str());
-    }
-
-  }
-
-  template <
-    typename ExceptionType,
-    typename ExpTupleT,
-    typename ActTupleT,
-    size_t I,
-    typename = typename std::enable_if<I!=std::min(std::tuple_size<typename std::remove_reference<ExpTupleT>::type>::value,
-                                                   std::tuple_size<typename std::remove_reference<ActTupleT>::type>::value)>::type
-  >
-  void evalEqualImplTuple(ExpTupleT&& e, ActTupleT && a, std::integral_constant<size_t, I>, const char* const file, int line, const char* msg)
-  {
-    if (std::get<I>(e) != std::get<I>(a)) {
-      std::ostringstream buf;
-      size_t eSize = std::tuple_size<typename std::remove_reference<ExpTupleT>::type>::value;
-      size_t aSize = std::tuple_size<typename std::remove_reference<ActTupleT>::type>::value;
-      if (*msg) {
-        buf << msg << " ";
-      }
-
-      buf << "Mismatch at index "
-          << I
-          << ". Expected: "
-          << std::get<I>(e)
-          << ", Actual: "
-          << std::get<I>(a)
-          << ", Expected size: " << eSize
-          << ", Actual size: " << aSize;
-
-      throw ExceptionType(file, line, buf.str().c_str());
-    }
-    evalEqualImplTuple<ExceptionType, ExpTupleT, ActTupleT>(e, a, std::integral_constant<size_t, I+1>(), file, line, msg);
-  }
-
-  // evalEqualImpl for std::tuple -- still needs work for clang & gcc
-  template <
-    typename ExceptionType,
-    typename ExpTupleT,
-    typename ActTupleT
-  >
-  auto evalEqualImpl(ExpTupleT&& e, ActTupleT&& a, int, const char* const file, int line, const char* msg = "")
-   -> decltype(std::tuple_size<typename std::remove_reference<ExpTupleT>::type>::value,
-               std::tuple_size<typename std::remove_reference<ActTupleT>::type>::value,
-               void())
-   {
-     evalEqualImplTuple<ExceptionType, ExpTupleT, ActTupleT>(e, a, std::integral_constant<size_t, 0>(), file, line, msg);
-   }
 
   // policy for passing arguments to evalEqual by value
   template <typename L, typename R>
@@ -337,6 +259,8 @@ namespace scope {
     );
   }
 
+
+/**************************** Test types *****************************/
   struct TestCommon {
     TestCommon(const std::string& name, const std::string& source):
       Name(name), SourceFile(source) {}
@@ -452,6 +376,8 @@ namespace scope {
     }
   };
 
+
+/**************************** TestRunner decl *****************************/
   template<class T> class Node;
   class AutoRegister;
 
@@ -471,6 +397,8 @@ namespace scope {
     virtual void setFilter(const std::shared_ptr<std::regex>& filter) = 0;
   };
 
+
+/**************************** Auto-registration types *****************************/
   template<class T> class Node {
   public:
     Node(): Next(nullptr), FirstChild(nullptr) {}
@@ -541,6 +469,8 @@ namespace scope {
   namespace user_defined {}
 }
 
+
+/**************************** MACROS! *****************************/
 #define SCOPE_CAT(s1, s2) s1##s2
 #define SCOPE_UNIQUENAME(base) SCOPE_CAT(base, __LINE__)
 
@@ -610,3 +540,112 @@ namespace scope {
   catch (const exception&) { \
     ; \
   }
+
+
+
+
+
+// This is some code specialized handling of equality comparison for std::tuple<> arguments.
+// It doesn't quite work, and it might do too much. Putting it here to return to it.
+/*
+  template <
+    typename TupleT
+  >
+  const char* tupleGetOrDefault(TupleT&&, std::integral_constant<size_t, std::tuple_size<typename std::remove_reference<TupleT>::type>::value>)
+  {
+    return "*past end*";
+  }
+
+  template <
+    typename TupleT,
+    size_t I,
+    typename = typename std::enable_if<I!=std::tuple_size<typename std::remove_reference<TupleT>::type>::value>::type
+  >
+  const char* tupleGetOrDefault(TupleT&& tup, std::integral_constant<size_t, I>)
+  {
+    std::ostringstream buf;
+    buf << std::get<I>(tup);
+    return buf.str().c_str();
+  }
+
+  template <
+    typename ExceptionType,
+    typename ExpTupleT,
+    typename ActTupleT
+  >
+  void  evalEqualImplTuple(ExpTupleT&& e,
+                          ActTupleT && a,
+                          std::integral_constant<size_t,
+                                                std::min(std::tuple_size<typename std::remove_reference<ExpTupleT>::type>::value,
+                                                         std::tuple_size<typename std::remove_reference<ActTupleT>::type>::value)> I,
+                          const char* const file, int line, const char* msg )
+  {
+    if (I != std::max(std::tuple_size<typename std::remove_reference<ExpTupleT>::type>::value,
+                      std::tuple_size<typename std::remove_reference<ActTupleT>::type>::value)) {
+      size_t eSize = std::tuple_size<typename std::remove_reference<ExpTupleT>::type>::value;
+      size_t aSize = std::tuple_size<typename std::remove_reference<ActTupleT>::type>::value;
+      std::ostringstream buf;
+      if (*msg) {
+        buf << msg << " ";
+      }
+
+      buf << "Mismatch at index "
+          << I
+          << ". Expected: "
+          << tupleGetOrDefault(e, std::integral_constant<size_t, I>())
+          << ", Actual: "
+          << tupleGetOrDefault(a, std::integral_constant<size_t, I>())
+          << ", Expected size: " << eSize
+          << ", Actual size: " << aSize;
+
+      throw ExceptionType(file, line, buf.str().c_str());
+    }
+
+  }
+
+  template <
+    typename ExceptionType,
+    typename ExpTupleT,
+    typename ActTupleT,
+    size_t I,
+    typename = typename std::enable_if<I!=std::min(std::tuple_size<typename std::remove_reference<ExpTupleT>::type>::value,
+                                                   std::tuple_size<typename std::remove_reference<ActTupleT>::type>::value)>::type
+  >
+  void evalEqualImplTuple(ExpTupleT&& e, ActTupleT && a, std::integral_constant<size_t, I>, const char* const file, int line, const char* msg)
+  {
+    if (std::get<I>(e) != std::get<I>(a)) {
+      std::ostringstream buf;
+      size_t eSize = std::tuple_size<typename std::remove_reference<ExpTupleT>::type>::value;
+      size_t aSize = std::tuple_size<typename std::remove_reference<ActTupleT>::type>::value;
+      if (*msg) {
+        buf << msg << " ";
+      }
+
+      buf << "Mismatch at index "
+          << I
+          << ". Expected: "
+          << std::get<I>(e)
+          << ", Actual: "
+          << std::get<I>(a)
+          << ", Expected size: " << eSize
+          << ", Actual size: " << aSize;
+
+      throw ExceptionType(file, line, buf.str().c_str());
+    }
+    evalEqualImplTuple<ExceptionType, ExpTupleT, ActTupleT>(e, a, std::integral_constant<size_t, I+1>(), file, line, msg);
+  }
+
+  // evalEqualImpl for std::tuple -- still needs work for clang & gcc
+  template <
+    typename ExceptionType,
+    typename ExpTupleT,
+    typename ActTupleT
+  >
+  auto evalEqualImpl(ExpTupleT&& e, ActTupleT&& a, int, const char* const file, int line, const char* msg = "")
+   -> decltype(std::tuple_size<typename std::remove_reference<ExpTupleT>::type>::value,
+               std::tuple_size<typename std::remove_reference<ActTupleT>::type>::value,
+               void())
+   {
+     evalEqualImplTuple<ExceptionType, ExpTupleT, ActTupleT>(e, a, std::integral_constant<size_t, 0>(), file, line, msg);
+   }
+*/
