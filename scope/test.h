@@ -40,6 +40,36 @@ namespace scope {
   }
 
 
+  // Helper functions for checking simple equality
+  // Used in both the std::pair evalEqual functions, and the simple evalEqual
+  // Since operator==(char*, char*) doesn't check for equality
+
+  template <
+    typename ExpectedT,
+    typename ActualT
+  >
+  bool equalsImpl(ExpectedT&& e, ActualT&& a, ...) {
+    return e == a;
+  }
+
+  template <
+    typename ExpectedT,
+    typename ActualT
+  >
+  auto equalsImpl(ExpectedT&& e, ActualT&& a, int)
+   -> decltype(strcmp(e, a), bool())
+  {
+    return strcmp(e, a) == 0;
+  }
+
+  template <
+    typename ExpectedT,
+    typename ActualT
+  >
+  bool equals(ExpectedT&& e, ActualT&& a) {
+    return equalsImpl(e, a, 0);
+  }
+
   // Helper functions for printing things
   // after equality checks have failed
   // operator<<(std::ostream&, std::nullptr_t) may or may not be defined
@@ -91,7 +121,7 @@ namespace scope {
    -> decltype(equals(e, a), printValue(std::declval<std::ostringstream&>(), e), printValue(std::declval<std::ostringstream&>(), a), void())
   {
     // it'd be good to have a CTAssert on (ExpectedT==ActualT)
-    if (!(e == a)) {
+    if (!equals(e, a)) {
       std::ostringstream buf;
       if (*msg) {
         buf << msg << " ";
@@ -216,16 +246,16 @@ namespace scope {
                  const std::pair<ActualFirstT, ActualSecondT>& a,
                  const char* msg = "")
   {
-    if (e.first != a.first || e.second != a.second) {
+    if (!equals(e.first, a.first) || !equals(e.second, a.second)) {
       std::ostringstream buf;
       if (*msg) {
         buf << msg << ". ";
       }
-      if (e.first != a.first) {
+      if (!equals(e.first, a.first)) {
         buf << "Expected first: " << e.first
           << ", Actual first: " << a.first << ". ";
       }
-      if (e.second != a.second) {
+      if (!equals(e.second, a.second)) {
         buf << "Expected second: " << e.second
           << ", Actual second: " << a.second << ".";
       }
