@@ -40,6 +40,29 @@ namespace scope {
   }
 
 
+  // Helper functions for printing things
+  // after equality checks have failed
+  // operator<<(std::ostream&, std::nullptr_t) may or may not be defined
+  // clang doesn't have any definitions, but in GCC it's ambiguous,
+  // hence the reason why we're not just adding an overload
+  template <
+    typename T,
+    typename = typename std::enable_if<std::is_same<typename std::decay<T>::type, std::nullptr_t>::value>::type
+  >
+  void printValueImpl(std::ostream& buf, T&&, int) {
+    buf << "<nullptr>";
+  }
+
+  template <typename T>
+  void printValueImpl(std::ostream& buf, T&& t, ...) {
+    buf << t;
+  }
+
+  template <typename T>
+  void printValue(std::ostream& buf, T&& t) {
+    printValueImpl(buf, t, 0);
+  }
+
 /**************************** evalEqual mechanics *****************************
 
   There are several different template functions for evalEqual(). They are used
@@ -51,12 +74,12 @@ namespace scope {
 
    The std::pair form provides a concrete implementation. The rest forward to evalEqualImpl,
    which has two forms. Their arguments differ in that one takes an int as a dummy
-   parameter and the other a long. The one with an int treats the Expected and 
+   parameter and the other a long. The one with an int treats the Expected and
    Actual arguments as sequences, for which std::begin() and std::end() are defined.
-   In forwarding, evalEqual() passes "0" to the dummy parameter, and because 0 
+   In forwarding, evalEqual() passes "0" to the dummy parameter, and because 0
    is an int, the sequence version of evalEqual() is preferred. But if the types
    do not satisfy std::begin() and std::end(), then, due to SFINAE, the evalEqualImpl
-   that takes a long will be selected, which simply calls op== on the two arguments.
+   that takes a long will be selected, which simply calls equals() on the two arguments.
 
 
   TO-DO:
@@ -65,7 +88,7 @@ namespace scope {
 */
   template<typename ExceptionType, typename ExpectedT, typename ActualT>
   auto evalEqualImpl(ExpectedT&& e, ActualT&& a, long, const char* const file, int line, const char* msg = "")
-   -> decltype((e == a), std::declval<std::ostringstream&>() << e, std::declval<std::ostringstream&>() << a, void())
+   -> decltype(equals(e, a), printValue(std::declval<std::ostringstream&>(), e), printValue(std::declval<std::ostringstream&>(), a), void())
   {
     // it'd be good to have a CTAssert on (ExpectedT==ActualT)
     if (!(e == a)) {
@@ -73,7 +96,11 @@ namespace scope {
       if (*msg) {
         buf << msg << " ";
       }
-      buf << "Expected: " << e << ", Actual: " << a;
+      buf << "Expected: ";
+      printValue(buf, e);
+      buf << ", Actual: ";
+      printValue(buf, a);
+
       throw ExceptionType(file, line, buf.str().c_str());
     }
   }
