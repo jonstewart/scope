@@ -156,12 +156,15 @@ namespace scope {
 
   // policy for passing arguments to evalEqual by value
   template <typename L, typename R>
-  using pass_by_value = std::integral_constant<bool,
+  using pass_by_value_decayed = std::integral_constant<bool,
     (!std::is_class<L>::value &&
       std::is_convertible<const L, const R>::value) ||
     (!std::is_class<R>::value &&
       std::is_convertible<const R, const L>::value)
   >;
+
+  template <typename L, typename R>
+  using pass_by_value = pass_by_value_decayed<typename std::decay<L>::type, typename std::decay<R>::type>;
 
   // evalEqual for arguments passed by value
   template<
