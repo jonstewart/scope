@@ -85,3 +85,15 @@ SCOPE_TEST(setInequality) {
 
   SCOPE_ASSERT_EQUAL(a, b);
 }
+
+SCOPE_TEST(stringEquality) {
+  char* a = (char*) "hello";
+  const char* b = "hello";
+  SCOPE_ASSERT_EQUAL(a, b);
+  SCOPE_ASSERT_EQUAL("hello", a);
+}
+
+SCOPE_TEST(nullptrEquality) {
+  int* a = nullptr;
+  SCOPE_ASSERT_EQUAL(nullptr, a);
+}
