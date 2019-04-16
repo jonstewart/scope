@@ -66,7 +66,7 @@ SCOPE_TEST(initListPedantic) {
   SCOPE_ASSERT_EQUAL({1, 2, 3}, {1, 2, 3});
 }
 
-SCOPE_TEST(pairEquality) {
+SCOPE_TEST(pairInequality) {
   std::pair<short, std::string> a = {5, "hello"};
   std::pair<int, std::string> b = {5, "hello, world"};
   SCOPE_ASSERT_EQUAL(a, b);
@@ -86,11 +86,15 @@ SCOPE_TEST(setInequality) {
   SCOPE_ASSERT_EQUAL(a, b);
 }
 
-SCOPE_TEST(stringEquality) {
+SCOPE_TEST(charPtrEquality) {
   char* a = (char*) "hello";
   const char* b = "hello";
   SCOPE_ASSERT_EQUAL(a, b);
   SCOPE_ASSERT_EQUAL("hello", a);
+}
+
+SCOPE_TEST(stringInequality) {
+  SCOPE_ASSERT_EQUAL(std::string("foo"), std::string("bar"));
 }
 
 SCOPE_TEST(nullptrEquality) {
