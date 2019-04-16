@@ -139,7 +139,9 @@ namespace scope {
   template <
     typename ExceptionType,
     typename ExpSequenceT,
-    typename ActSequenceT
+    typename ActSequenceT,
+    // Disable for std::string
+    typename = typename std::enable_if<!std::is_convertible<ExpSequenceT, std::string>::value && !std::is_convertible<ActSequenceT, std::string>::value>::type
   >
   auto evalEqualImpl(ExpSequenceT&& e, ActSequenceT&& a, int, const char* const file, int line, const char* msg = "")
    -> decltype(std::begin(e), std::end(e), std::begin(a), std::end(a), void())
