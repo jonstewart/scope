@@ -11,6 +11,7 @@
 #include <list>
 #include <functional>
 #include <regex>
+#include <type_traits>
 // #include <iostream>
 
 
@@ -39,6 +40,11 @@ namespace scope {
     }
   }
 
+  template<typename FirstT, typename SecondT>
+  std::ostream& operator<<(std::ostream& out, const std::pair<FirstT, SecondT>& thepair) {
+    out << '(' << thepair.first << ", " << thepair.second << ')';
+    return out;
+  }
 
 /**************************** evalEqual mechanics *****************************
 
@@ -136,6 +142,17 @@ namespace scope {
       std::is_convertible<const R, const L>::value)
   >;
 
+  // evalEqual for floating points
+  // template<
+  //   typename ExceptionType,
+  //   typename ExpectedT,
+  //   typename ActualT,
+  //   typename = typename std::enable_if<std::is_floating_point<ExpectedT>::value || std::is_floating_point<ActualT>::value>::type
+  // >
+  // void evalEqual(const char* const file, int line, const ExpectedT e, const ActualT a, double tolerance, const char* msg = "") {
+
+  // }
+
   // evalEqual for arguments passed by value
   template<
     typename ExceptionType,
@@ -186,19 +203,14 @@ namespace scope {
                  const std::pair<ActualFirstT, ActualSecondT>& a,
                  const char* msg = "")
   {
+    // This conditional allows for convertible member types to be compared
+    // which isn't possible by calling op== on the pair itself.
     if (e.first != a.first || e.second != a.second) {
       std::ostringstream buf;
       if (*msg) {
         buf << msg << ". ";
       }
-      if (e.first != a.first) {
-        buf << "Expected first: " << e.first
-          << ", Actual first: " << a.first << ". ";
-      }
-      if (e.second != a.second) {
-        buf << "Expected second: " << e.second
-          << ", Actual second: " << a.second << ".";
-      }
+      buf << "Expected: " << e << ", Actual: " << a << '.';
       throw ExceptionType(file, line, buf.str().c_str());
     }
   }

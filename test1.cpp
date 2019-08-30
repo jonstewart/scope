@@ -85,3 +85,10 @@ SCOPE_TEST(setInequality) {
 
   SCOPE_ASSERT_EQUAL(a, b);
 }
+
+SCOPE_TEST(pairSequence) {
+  std::vector<std::pair<std::string, unsigned int>> actual = {{"hello", 5u}};
+  // actual.emplace_back({"hello", 5u});
+
+  SCOPE_ASSERT_EQUAL({std::make_pair(std::string("hello"), 5u)}, actual);
+}
