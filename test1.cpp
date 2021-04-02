@@ -92,3 +92,40 @@ SCOPE_TEST(pairSequence) {
 
   SCOPE_ASSERT_EQUAL({std::make_pair(std::string("hello"), 5u)}, actual);
 }
+
+SCOPE_TEST(strings) {
+  std::string a("a");
+  std::string a2("a");
+
+  char cs[2];
+  cs[0] = 'a';
+  cs[1] = '\0';
+
+  char cs2[2];
+  cs2[0] = 'a';
+  cs2[1] = '\0';
+
+  char* cp = &cs2[0];
+
+  SCOPE_ASSERT_EQUAL(a, "a");
+  SCOPE_ASSERT_EQUAL("a", a);
+  SCOPE_ASSERT_EQUAL(a, a2);
+
+  SCOPE_ASSERT_EQUAL(a, cs);
+  SCOPE_ASSERT_EQUAL(cs, a);
+  SCOPE_ASSERT_EQUAL("a", cp);
+}
+
+SCOPE_TEST(nulls) {
+  void* v = 0;
+  char* x = 0;
+  int*  z = nullptr;
+
+  SCOPE_ASSERT_EQUAL(nullptr, v);
+  SCOPE_ASSERT_EQUAL(nullptr, x);
+  SCOPE_ASSERT_EQUAL(nullptr, z);
+  // SCOPE_ASSERT_EQUAL(0, v);
+  // SCOPE_ASSERT_EQUAL(0, x);
+  // SCOPE_ASSERT_EQUAL(0, z);
+//  SCOPE_ASSERT_EQUAL(null, x);
+}

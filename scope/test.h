@@ -63,12 +63,24 @@ namespace scope {
    is an int, the sequence version of evalEqual() is preferred. But if the types
    do not satisfy std::begin() and std::end(), then, due to SFINAE, the evalEqualImpl
    that takes a long will be selected, which simply calls op== on the two arguments.
-
+`
 
   TO-DO:
     - provide specialization for comparison of std::tuple args (see bottom of header)
     - provide specialization for epsilon-comparison of floating point scalars
 */
+  template<typename ExceptionType, typename ActualT>
+  void evalEqualImpl(nullptr_t e, ActualT&& a, long, const char* const file, int line, const char* msg = "") {
+    if (!(ActualT(e) == a)) {
+      std::ostringstream buf;
+      if (*msg) {
+        buf << msg << " ";
+      }
+      buf << "Expected: null, Actual: " << a;
+      throw ExceptionType(file, line, buf.str().c_str());
+    }
+  }
+
   template<typename ExceptionType, typename ExpectedT, typename ActualT>
   auto evalEqualImpl(ExpectedT&& e, ActualT&& a, long, const char* const file, int line, const char* msg = "")
    -> decltype((e == a), std::declval<std::ostringstream&>() << e, std::declval<std::ostringstream&>() << a, void())
@@ -133,13 +145,35 @@ namespace scope {
     }
   }
 
+  template<typename ExceptionType>
+  void evalEqual(const char* const file, int line, const char* e, const char* a, const char* msg = "") {
+    evalEqualImpl<ExceptionType>(std::string(e), std::string(a), 0, file, line, msg);
+  }
+
+  template<typename ExceptionType>
+  void evalEqual(const char* const file, int line, char* e, const char* a, const char* msg = "") {
+    evalEqualImpl<ExceptionType>(std::string(e), std::string(a), 0, file, line, msg);
+  }
+
+  template<typename ExceptionType>
+  void evalEqual(const char* const file, int line, const char* e, char* a, const char* msg = "") {
+    evalEqualImpl<ExceptionType>(std::string(e), std::string(a), 0, file, line, msg);
+  }
+
+  template<typename ExceptionType>
+  void evalEqual(const char* const file, int line, char* e, char* a, const char* msg = "") {
+    evalEqualImpl<ExceptionType>(std::string(e), std::string(a), 0, file, line, msg);
+  }
+
   // policy for passing arguments to evalEqual by value
   template <typename L, typename R>
   using pass_by_value = std::integral_constant<bool,
-    (!std::is_class<L>::value &&
+    std::is_null_pointer<L>::value || std::is_null_pointer<R>::value ||
+    std::is_pointer<L>::value || std::is_pointer<R>::value ||
+    ((!std::is_class<L>::value &&
       std::is_convertible<const L, const R>::value) ||
     (!std::is_class<R>::value &&
-      std::is_convertible<const R, const L>::value)
+      std::is_convertible<const R, const L>::value))
   >;
 
   // evalEqual for floating points
